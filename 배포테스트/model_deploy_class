@@ -1,0 +1,221 @@
+#!/bin/bash
+
+modeldir=$1
+svc=$2
+lmtype=$3
+date=$4
+
+###############경로 변경이 필요한 Parameter ######
+
+origin_path=/home/gosh2/smp/r-agent/deploy
+cfg_path=/opt/gosh2/cfg
+log_path=/log/gosh2
+
+prod_modeldir=/home/gosh2/cmodels/prod/svc/$svc/enc-out
+test_modeldir=/home/gosh2/cmodels/test/svc/$svc/enc-out
+
+#################################################
+
+log_PFile=$origin_path/log/$svc/log_deploy_${svc}_${date}
+
+echo "" >> $log_PFile
+echo "[$(date +'%F-%H-%M-%S-%N')] START" >> $log_PFile
+echo "[$(date +'%F-%H-%M-%S-%N')] [-------------------------------]" >> $log_PFile
+echo "[$(date +'%F-%H-%M-%S-%N')] [---Stage 1 - PARAMETER Check---]" >> $log_PFile
+echo "[$(date +'%F-%H-%M-%S-%N')] Modeldir      : "$modeldir >> $log_PFile
+echo "[$(date +'%F-%H-%M-%S-%N')] SVC           : "$svc >> $log_PFile
+echo "[$(date +'%F-%H-%M-%S-%N')] [-------------------------------]" >> $log_PFile
+echo "[$(date +'%F-%H-%M-%S-%N')] [---Stage 2 - CLASS MODEL DEPLOY]" >> $log_PFile
+
+
+################### Model Change ###################
+sed -i 's/\=\//\= \//g' $cfg_path/kep/kep.ini
+
+########### Check prod or test service code ########
+
+### Service Code 가 Prod Code ###
+if [ $svc -lt 21 ];then
+	basedir=$prod_modeldir
+	new_classlm_ver=`echo $modeldir | awk -F '/' '{print $NF}'`
+
+	echo "[$(date +'%F-%H-%M-%S-%N')] MODE          : PROD service" >> $log_PFile
+
+	cp -rf $modeldir $basedir/classlms
+
+	echo "[$(date +'%F-%H-%M-%S-%N')] Copy $modeldir To $basedir/classlms" >> $log_PFile
+
+	new_classlm_dir=$basedir/classlms/$new_classlm_ver
+
+	### KEP 번호 한자리수 ###
+	checksvc=`echo $svc |wc -L`
+	if [ $checksvc -eq "1" ];then
+		inputline_first=`grep -rn KEP_0"$svc" $cfg_path/kep/kep.ini |cut -d: -f1`
+		inputline=`expr $inputline_first`
+
+		while [ 1 ]
+		do
+			input_check=`sed -n ''"$inputline"'p' $cfg_path/kep/kep.ini |awk '{print $1}'`
+			if [ $input_check == "CLASS_MODEL_DIR" ];then
+				model_before=`sed -n ''"$inputline"'p' $cfg_path/kep/kep.ini |awk '{print $3}'`
+				if [ "$model_before" == "$new_classlm_dir" ];then
+                        echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Model is same" >> $log_PFile
+						result='{"resultCode":"C0100","resultMsg":"Model is same","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
+						echo $result 
+						echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
+						echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
+                        exit 0
+
+                        break
+				else
+					sed -i ''"$inputline"'s@'"$model_before"'@'"$new_classlm_dir"'@' $cfg_path/kep/kep.ini
+					break
+				fi
+			else
+				let inputline=inputline+1
+			fi
+		done
+
+	### KEP 번호 두자리수 ###
+	elif [ $checksvc -eq "2" ];then
+			inputline_first=`grep -rn KEP_"$svc" $cfg_path/kep/kep.ini |cut -d: -f1`
+			inputline=`expr $inputline_first`
+
+			while [ 1 ]
+			do
+					input_check=`sed -n ''"$inputline"'p' $cfg_path/kep/kep.ini |awk '{print $1}'`
+					if [ $input_check == "CLASS_MODEL_DIR" ];then
+							model_before=`sed -n ''"$inputline"'p' $cfg_path/kep/kep.ini |awk '{print $3}'`
+							if [ "$model_before" == "$new_classlm_dir" ];then
+				                echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Model is same" >> $log_PFile
+								result='{"resultCode":"C0100","resultMsg":"Model is same","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
+								echo $result
+								echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
+								echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
+							    exit 0
+
+		                        break
+							else
+								sed -i ''"$inputline"'s@'"$model_before"'@'"$new_classlm_dir"'@' $cfg_path/kep/kep.ini
+								break
+							fi
+					else
+							let inputline=inputline+1
+					fi
+			done
+	fi 
+
+### Service code 가 Test Code ###
+else 
+    basedir=$test_modeldir
+	new_classlm_ver=`echo $modeldir | awk -F '/' '{print $NF}'`
+
+    echo "[$(date +'%F-%H-%M-%S-%N')] MODE          : TEST service" >> $log_PFile
+
+    cp -rf $modeldir $basedir/classlms
+    echo "[$(date +'%F-%H-%M-%S-%N')] Copy $modeldir To $basedir/classlms" >> $log_PFile
+
+	new_classlm_dir=$basedir/classlms/$new_classlm_ver
+
+	inputline_first=`grep -rn KEP_"$svc" $cfg_path/kep/kep.ini |cut -d: -f1`
+	inputline=`expr $inputline_first`
+
+	while [ 1 ]
+	do
+			input_check=`sed -n ''"$inputline"'p' $cfg_path/kep/kep.ini |awk '{print $1}'`
+			if [ $input_check == "CLASS_MODEL_DIR" ];then
+					model_before=`sed -n ''"$inputline"'p' $cfg_path/kep/kep.ini |awk '{print $3}'`
+					if [ "$model_before" == "$new_classlm_dir" ];then
+						echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Model is same" >> $log_PFile
+						result='{"resultCode":"C0100","resultMsg":"Model is same","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
+						echo $result 
+						echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
+						echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
+						exit 0
+
+						break
+					else
+						sed -i ''"$inputline"'s@'"$model_before"'@'"$new_classlm_dir"'@' $cfg_path/kep/kep.ini
+						break
+					fi
+			else
+					let inputline=inputline+1
+			fi
+	done
+fi
+################### KEP Kill ###################
+
+function kep_kill()
+{
+ps -ef | grep -E "kep".+" "+$svc$ |grep -v grep |grep -v tail |grep -v vi > $origin_path/tmp/progtemp_$svc
+if [ ! -z `awk '{print $2}' $origin_path/tmp/progtemp_$svc` ];then
+	kill -9 `awk '{print $2}' $origin_path/tmp/progtemp_$svc`
+	echo "[$(date +'%F-%H-%M-%S-%N')] Kill ServiceCode $svc KEP process" >> $log_PFile
+    echo "[$(date +'%F-%H-%M-%S-%N')]" >> $log_PFile
+fi
+}
+
+kep_kill
+
+rm $origin_path/tmp/progtemp_$svc
+
+echo $svc > $origin_path/tmp/deploying_$svc
+sleep 3
+
+################### Model Check ###################
+sed -i 's/\=\//\= \//g' $cfg_path/kep/kep.ini
+model_after=`sed -n ''"$inputline"'p' $cfg_path/kep/kep.ini |awk '{print $3}'`
+echo "[$(date +'%F-%H-%M-%S-%N')] $new_classlm_dir is new classlm" >> $log_PFile
+echo "[$(date +'%F-%H-%M-%S-%N')] $model_after is model_after" >> $log_PFile
+
+if [ "$new_classlm_dir" == "$model_after" ];then
+    export LANG=en
+
+    week_before=`date +%a`
+#	echo $week_before
+
+    week_after=`echo $week_before |tr [A-Z] [a-z]`
+#	echo $week_after
+	
+	echo "[$(date +'%F-%H-%M-%S-%N')]" > $origin_path/log/$svc/log_real_${svc}_${date}
+#    timeout 32s tail $log_path/kep/kep.log.${svc}.${week_after} -n0 -F | while read line;
+    timeout 32s tail $log_path/kfp/kfp.log.${svc}.${week_after} -n0 -F | while read line;
+    do		
+            if [[ $line =~ 'Connected SD' ]]; then
+                
+                echo "[$(date +'%F-%H-%M-%S-%N')] stop" >> $origin_path/log/$svc/log_real_${svc}_${date}
+                pkill tail
+            fi
+    done;
+	
+	chk_deploy=`cat $origin_path/log/$svc/log_real_${svc}_${date} |tail -1 |head -1` 	
+	if [[ $chk_deploy =~ "stop" ]];then
+		result='{"resultCode":"C0100","resultMsg":"Success","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
+		rm -rf $model_before
+		echo $result
+		echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Remove Before Model $model_before" >> $log_PFile
+		echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
+		echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
+		exit 0
+	
+	else
+		result='{"resultCode":"E0400","resultMsg":"Model Load Fail","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
+		rm -rf $model_before
+		echo $result
+		echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Model Load Fail" >> $log_PFile
+		echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
+		echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
+		exit 0
+	fi
+
+else
+	result='{"resultCode":"E0200","resultMsg":"Model Config Error","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
+	rm -rf $new_classlm_dir
+	echo $result
+	echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Remove New Model $new_classlm_dir" >> $log_PFile
+	echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
+	echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
+
+	exit 0
+fi
+
+exit 0
