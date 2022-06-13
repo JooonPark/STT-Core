@@ -1,0 +1,255 @@
+/****************************************************************************************
+ * INCLUDE
+****************************************************************************************/
+#include <execinfo.h>
+#include <pthread.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <sys/time.h>
+#include <unistd.h>
+
+#include "VoiceKitClient.h"
+
+
+/****************************************************************************************
+ * DEFINE
+****************************************************************************************/
+#define LogC(fmt, ...) printf("\x1b[1m[%s] "fmt"\x1b[0m", timeToString(), ## __VA_ARGS__)
+#define LogE(fmt, ...) printf("\x1b[1m\x1b[31m[%s][%s : %d] "fmt"\x1b[0m", timeToString(), __func__, __LINE__, ## __VA_ARGS__)
+#define LogG(fmt, ...) printf("\x1b[1m\x1b[32m[%s] "fmt"\x1b[0m", timeToString(), ## __VA_ARGS__)
+#define LogR(fmt, ...) printf("\x1b[1m\x1b[31m[%s] "fmt"\x1b[0m", timeToString(), ## __VA_ARGS__)
+
+#define STT_IP "127.0.0.1"
+#define STT_PORT 37171
+// #define STT_SVC "1416523158"
+// #define STT_SVC "1715453161"
+#define STT_SVC "1716553161"
+#define STT_PHONETYPE "AI-IVR"
+#define STT_DEVICEID "DEVICE"
+#define THREAD_MAX 1
+
+
+/****************************************************************************************
+ * STRUCT
+****************************************************************************************/
+typedef struct _THREAD_INFO {
+	int threadNum;
+	int isEnd;
+	char path[1024];
+	pthread_t mThread;
+	VoiceKitClient *mVoiceKitClient;
+} THREAD_INFO;
+
+
+/****************************************************************************************
+ * VARIABLE
+****************************************************************************************/
+static THREAD_INFO info[THREAD_MAX];
+
+
+/****************************************************************************************
+ * FUNCTION
+****************************************************************************************/
+inline char* timeToString() {
+	static char s[20];
+	struct tm *t;
+	time_t timer;
+
+	timer = time(NULL);
+	t = localtime(&timer);
+
+	sprintf(s, "%04d-%02d-%02d %02d:%02d:%02d", t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
+
+	return s;
+}
+
+int startThread(pthread_t *thread, void *(*start_routine)(void *), void *arg) {
+	pthread_attr_t attr;
+
+	if(pthread_attr_init(&attr) != 0) {
+		return false;
+	}
+
+	if(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) != 0) {
+		return false;
+	}
+
+	if(pthread_create(thread, &attr, start_routine, arg) < 0) {
+		return false;
+	}
+
+	if(pthread_attr_destroy(&attr) != 0) {
+		return false;
+	}
+
+	return true;
+}
+
+void stopThread(pthread_t *thread) {
+	if(*thread != 0) {
+		pthread_cancel(*thread);
+		*thread = 0;
+	}
+}
+
+void Sigh(int n) {
+	LogR("[SIG] Catch The Sigh %d\n", n);
+
+	void *array[10];
+	size_t size;
+	char **strings;
+	size = backtrace(array, 10);
+	strings = backtrace_symbols(array, size);
+	for(int i = 2; i < (int)size; i++) {
+		LogR("[SIG] %d: %s\n", (i - 2), strings[i]);
+	}
+	free(strings);
+
+	exit(0);
+}
+
+void *thread_main(void *value) {
+	VoiceKitClient *mVoiceKitClient = (VoiceKitClient *)value;
+	THREAD_INFO *userData = (THREAD_INFO *)mVoiceKitClient->userData;
+	int i = userData->threadNum;
+	char read_buffer[32000];
+	int read_size = 0;
+	int nCount = 0;
+	FILE *fp = NULL;
+
+	while(true) {
+		usleep(100000);
+
+		if(userData->isEnd == 1) {
+			userData->isEnd = 2;
+			fp = fopen(userData->path, "r");
+			LogG("[%04d][R][START] : path(%s)\n", i, userData->path);
+
+			if(fp > 0) {
+				memset(read_buffer, 0, 32000);
+				nCount = 0;
+
+				fseek(fp, 0, 0);
+
+				while((read_size = fread(read_buffer, sizeof(char), 1600, fp)) > 0) {
+					if(feof(fp)) {
+						LogG("[%04d][R][LAST]\n", i);
+						mVoiceKitClient->putData(NULL, 0, true);
+					} else {
+						mVoiceKitClient->putData(read_buffer, read_size, false);
+						usleep(100000);
+					}
+				}
+
+				fclose(fp);
+			} else {
+				LogR("[%04d][R][OPEN ERROR] : path(%s)\n", i, userData->path);
+			}
+
+			LogG("[%04d][R][END]\n", i);
+		}
+	}
+}
+
+void voiceKitFunc(void *instance, ST_MSG_VOICEKIT *data) {
+	VoiceKitClient *mVoiceKitClient = (VoiceKitClient *)instance;
+	THREAD_INFO *userData = (THREAD_INFO *)mVoiceKitClient->userData;
+	int i = userData->threadNum;
+
+	switch(data->type) {
+		case MSG_VOICEKIT_START: {
+			LogC("[%04d][START] : %d\n", i, data->stStart.nResultCode);
+			userData->isEnd = 1;
+			break;
+		}
+		case MSG_VOICEKIT_STT_START: {
+			LogC("[%04d][STT START] : nIdx(%d)\n", i, data->stSttStart.nIdx);
+			break;
+		}
+		case MSG_VOICEKIT_PARTIAL: {
+			LogC("[%04d][PARTIAL] : nIdx(%d), nResultCode(%d), nResultSize(%d) [%s]\n", i, data->stPartial.nIdx, data->stPartial.nResultCode, data->stPartial.nResultSize, data->stPartial.cResult);
+			break;
+		}
+		case MSG_VOICEKIT_RESULT: {
+			switch(data->stResult.nTxRxType) {
+				case 0: {
+					LogC("[%04d][RESULT][TX] : nIdx(%d), [%03.03lf ~ %03.03lf][BYTE : %d][TOTAL : %d][LST : %d][%s]\n", i, data->stResult.nIdx, data->stResult.fStartTime, data->stResult.fEndTime, data->stResult.nDataSize, data->stResult.nTotalDataSize, data->stResult.bLast, data->stResult.cResult);
+					break;
+				}
+				case 1: {
+					LogC("[%4d][RESULT][RX] : nIdx(%d), [%03.03lf ~ %03.03lf][BYTE : %d][TOTAL : %d]LST : %d][%s]\n", i, data->stResult.nIdx, data->stResult.fStartTime, data->stResult.fEndTime, data->stResult.nDataSize, data->stResult.nTotalDataSize,data->stResult.bLast, data->stResult.cResult);
+					break;
+				}
+				default: {
+					LogC("[%4d][RESULT][MO] : nIdx(%d), [%03.03lf ~ %03.03lf][LST : %d][%s]\n", i, data->stResult.nIdx, data->stResult.fStartTime, data->stResult.fEndTime, data->stResult.bLast, data->stResult.cResult);
+					break;
+				}
+			}
+			break;
+		}
+		case MSG_VOICEKIT_STOP: {
+			LogR("[%4d][STOP] : nResultCode(%d)\n", i, data->stStop.nResultCode);
+			userData->isEnd = 3;
+			break;
+		}
+	}
+}
+
+#define PCM_PATH "../../sound/%s.pcm"
+
+int main(int argc, char *argv[]) {
+	for(int i = 0; i < 20; ++i) {
+		if(i == 17) continue;
+		if(i == SIGALRM) continue;
+		signal(i, Sigh);
+	}
+
+	signal(SIGHUP, SIG_IGN);
+	signal(SIGPIPE, SIG_IGN);
+
+	LogG("==================== [MAIN START] ====================\n");
+	LogG("IP : %s, PORT : %d, SVC : %s, PHONETYPE : %s, DEVICEID : %s\n", STT_IP, STT_PORT, STT_SVC, STT_PHONETYPE, STT_DEVICEID);
+	LogG("======================================================\n");
+
+	char szCallKey[32];
+
+	for(int i = 0; i < THREAD_MAX; ++i) {
+		memset(szCallKey, 0, 32);
+		sprintf(szCallKey, "%d", i);
+
+		info[i].threadNum = i;
+		info[i].isEnd = 0;
+		sprintf(info[i].path, PCM_PATH, i);
+		info[i].mThread = 0;
+		info[i].mVoiceKitClient = new VoiceKitClient(voiceKitFunc);
+		info[i].mVoiceKitClient->setData(STT_IP, STT_PORT, STT_SVC, 0, STT_PHONETYPE, szCallKey, STT_DEVICEID);
+		info[i].mVoiceKitClient->userData = &info[i];
+		info[i].mVoiceKitClient->start();
+		startThread(&info[i].mThread, thread_main, (void *) info[i].mVoiceKitClient);
+	}
+
+	while(1) {
+		for(int i = 0; i < THREAD_MAX; ++i) {
+			if(info[i].isEnd == 3) {
+				info[i].isEnd = 0;
+				LogR("[%4d][RESET]\n", i);
+				usleep(100000);
+				info[i].mVoiceKitClient->start();
+			}
+		}
+		usleep(100000);
+	}
+
+	usleep(5000000);
+
+	for(int i = 0; i < THREAD_MAX; ++i) {
+		delete info[i].mVoiceKitClient;
+	}
+
+	printf("==================== [ MAIN END ] ====================\n");
+
+	return 0;
+}

@@ -1,0 +1,132 @@
+#!/bin/bash
+
+################### input parameter ###################
+
+svc=$1
+response_check=$2
+testfile_dir=$3
+date=$4
+
+origin_path=/home/gosh2/smp/c-agent/test ### 필요에 따라 바꿔야함
+vbrgw_port=37170   ### 필요에 따라 바꿔야함 
+
+################### direc & check & delete result folders ###################
+
+test_path=$origin_path/client-one/svc
+verify_dir=$origin_path/client-one/svc/$svc/
+
+if [ ! -d $test_path ];then
+   mkdir $test_path
+fi
+
+if [ ! -d $verify_dir ];then
+   mkdir $verify_dir
+fi
+
+################### wav_conv ###################
+wav_conv()
+{
+  indir=$1
+  
+  for tst1 in $indir/*;
+  do
+	#echo $tst1
+	if [[ `file $tst1` == *mu-law* ]];then
+		sox -r 8k -e mu-law -b 8 -c 1 $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t raw $tst1.pcm
+
+	elif [[ `file $tst1 |tr -d ' '` == *RIFF\(little-endian\)data,WAVEaudio,MicrosoftPCM,*16bit,mono16000Hz* ]];then
+		sox -r 16k -e signed-integer -b 16 -c 1 -L -t wav $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t raw $tst1.pcm
+
+	else
+		sox -r 8k -e signed-integer -b 16 -c 1 -L -t wav $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t raw $tst1.pcm
+	fi
+  done
+
+  rm $indir/*.wav
+  find $indir -name "*pcm" -exec rename .wav.pcm .pcm {} \;
+
+}
+
+run_client()
+{
+	indir=$1
+
+	for tst1 in $indir/*;
+	do
+	   $origin_path/client-one/stt_client -p $vbrgw_port -i 127.0.0.1 -s $svc -f $tst1
+	done
+}
+
+
+################### Copy testfile ###################
+rm -rf $verify_dir/*
+cp $testfile_dir $verify_dir/
+
+### wav_conv ###
+wav_conv $verify_dir
+
+################### check result ###################
+### callback type ###
+if [ $response_check -eq "0" ];then
+	### run ###
+	run_client $verify_dir > $origin_path/log/$svc/log_client_${svc}_${date}
+	
+	dirsim_error_check=`cat $origin_path/log/$svc/log_client_${svc}_${date} |head -5 |tail -1 | tr -d ' '`
+	if [[ $dirsim_error_check == *RESULT_VOICEKIT_CONNECT_ERROR* ]] || [[ $dirsim_error_check == *RESULT_VOICEKIT_UNKOWN_ERROR* ]];then
+		echo "Client Error" >> $origin_path/log/$svc/log_checkone_${svc}_${date}
+		exit 0
+	fi	
+	
+	while [ 1 ]
+	do
+		input_file_count=`ls $verify_dir | wc -l`
+
+		if [ "$input_file_count" -eq "2" ];then
+			echo "filename" >> $origin_path/log/$svc/log_checkone_${svc}_${date}
+			break
+		fi
+	done
+    exit 0	
+### response type ###
+elif [ $response_check -eq "1" ];then
+	### run ###
+	run_client $verify_dir > $origin_path/log/$svc/log_client_${svc}_${date}
+
+    dirsim_error_check=`cat $origin_path/log/$svc/log_client_${svc}_${date} |head -5 |tail -1 | tr -d ' '`
+    if [[ $dirsim_error_check == *RESULT_VOICEKIT_CONNECT_ERROR* ]] || [[ $dirsim_error_check == *RESULT_VOICEKIT_UNKOWN_ERROR* ]];then
+		result='{"resultCode":"E0005","resultMsg":"Client Error"}'
+        echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
+		echo $result
+        exit 0
+    fi
+
+	while [ 1 ]
+	do
+		input_file_count=`ls $verify_dir | wc -l`
+
+		if [ "$input_file_count" -eq 2 ];then
+			result='{"resultCode":"C0001","resultMsg":"Success"}'
+		    echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
+			echo $result
+			break
+#			result='{"resultCode":"E0110","resultMsg":"Single action verification Fail"}'
+#			echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
+#			echo $result
+#			break
+		fi
+	done
+	exit 0
+
+### type error ###
+else
+    result='{"resultCode":"E0007","resultMsg":"Response Type Error"}'
+    echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
+    echo $result
+
+	exit 0
+fi
+
+rm -rf /tmp/checkone_$svc /tmp/check_o_f_$svc
+
+exit 0 
+		
