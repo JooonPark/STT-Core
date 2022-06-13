@@ -1,0 +1,155 @@
+#!/bin/bash
+
+### input parameter ###
+srtid=$1
+svc=$2
+testfile_dir=$3
+date=$4
+
+origin_path=/home/gosh2/smp/srt-agent/srt ## 필요시 변경
+bin_dir=/opt/gosh2/bin                    ## 필요시 변경
+sfp_port="37160"                          ## 필요시 변경
+
+################### direc & check ###################
+test_path=$origin_path/test_file
+veri_path=$origin_path/test_file/$svc/$srtid
+
+if [ ! -d $test_path ];then
+   mkdir $test_path 
+fi
+
+if [ ! -d $test_path/$svc ];then
+   mkdir $test_path/$svc
+fi
+
+if [ ! -d $test_path/$svc/$srtid ];then
+   mkdir $test_path/$svc/$srtid
+fi
+
+rm -rf $veri_path/* ${veri_path}.partial ${veri_path}.partialindex ${veri_path}.result ${veri_path}.score ${veri_path}.stt_timestamp ${veri_path}.sttresult
+
+################### wav_conv ###################
+wav_conv()
+{
+  indir=$1
+  
+  for tst1 in $indir/*;
+  do
+	if [[ `file $tst1` == *mu-law* ]];then
+		sox -r 8k -e mu-law -b 8 -c 1 $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t wav $tst1.pcm
+	else
+		sox -r 8k -e signed-integer -b 16 -c 1 -L -t wav $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t wav $tst1.pcm 
+	fi
+  done
+  rm $indir/*.wav
+  find $indir -name "*pcm" -exec rename .wav.pcm .wav {} \;
+}
+#################################################
+
+
+################### check sttsim ###################
+check_sttsim()
+{
+        check_connect=`head -19 $origin_path/log/$svc/log_dirsim_${svc}_${date} |tail -1`
+        if [[ `echo $check_connect |tr -d ' '` == *ConnectedToFrp* ]];then
+                echo "sttim pass" >> $origin_path/log/$svc/log_checksrt_${svc}_${date}
+        else
+                echo "dirsim Error"
+                ps -ef | grep dirsim | grep -v grep | grep -v vi | grep -v tail > $origin_path/tmp/check_sttsim_$svc
+                if [ ! -z `awk '{print $2}' $origin_path/tmp/check_sttsim_$svc` ];then
+                        kill -9 `awk '{print $2}' $origin_path/tmp/check_sttsim_$svc`
+                        exit 0
+                fi
+        fi
+}
+
+################### check sfp ###################
+check_sfp()
+{
+    ps -ef | grep sfp.timestamp.wc |grep -v grep |grep -v tail |grep -v vi > $origin_path/tmp/verify_sfp_$svc
+    if [ -z `awk '{print $2}' $origin_path/tmp/verify_sfp_$svc` ];then
+            echo "SFP is dead" >> $origin_path/log/$svc/log_verify_${svc}_${date}
+            curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0110","resultMsg":"SFP is dead","serviceCode":"'"$svc"'"}'
+            exit 0
+    else
+        echo "SFP is alive" >> $origin_path/log/$svc/log_verify_${svc}_${date}
+    fi
+}
+
+################### sttresult_conv ###################
+sttresult_conv()
+{
+svc=$1
+for tst1 in $origin_path/test_file/$svc/veri_dir.sttresult/*;
+do
+    num=0
+    while [ 1 ]
+    do
+#        echo $tst1
+        nj=`cat $tst1 |jq ."segmentResults[$num]."endTime""`
+        nj2=`cat $tst1 |jq ."segmentResults[$num]."transcript""`
+#        echo $num
+        if [[ $nj -ne "null" ]];then
+            echo $nj2 >> $origin_path/tmp/stt_result_$svc
+            let num=num+1
+        else
+            nj3=`echo $tst1 | awk -F '/' '{print $NF}'`
+            cat $origin_path/tmp/stt_result_$svc |sed 's/"//g' > $tst1
+            rm $origin_path/tmp/stt_result_$svc
+            break
+        fi
+    done
+done
+
+}
+
+################### Copy testfile ###################
+testfile_format=`echo $testfile_dir | awk -F '/' '{print $NF}'| awk -F '.' '{print $NF}'`
+
+if [ $testfile_format == "wav" ];then
+    testfile_key="wav"
+elif [ $testfile_format == "pcm" ];then
+    testfile_key="pcm"
+else
+    echo ""
+fi
+
+cp $testfile_dir $veri_path/${svc}_${srtid}.${testfile_key}
+
+############# wav_conv & sttsim running check ###############
+wav_conv $veri_path
+
+################### check result ###################
+if [ ! -e $bin_dir/dirsim ];then
+    echo "dirsim Error"
+    exit 0
+fi
+
+$bin_dir/dirsim -p $sfp_port -i 127.0.0.1 -d $veri_path -s $svc >> $origin_path/log/$svc/log_dirsim_${svc}_${date} &
+
+echo "sttsim done"
+sleep 2
+
+check_sttsim
+
+while [ 1 ]
+do
+	input_file_count=`ls -l $veri_path | wc -l`
+	output_file_dir=${veri_path}.sttresult
+	output_file_count=`ls -l $output_file_dir |wc -l`
+
+	if [ "$input_file_count" -eq "$output_file_count" ];then
+		grep -rn F $output_file_dir > $origin_path/tmp/check_m_f_$svc
+		if [ ! -z $origin_path/tmp/check_m_f_$svc ];then
+			echo "filename"				
+			break
+		else
+			echo "contain F sttresult error"
+			break
+		fi
+	fi
+done
+#rm -rf $origin_path/tmp/wcr_$svc $origin_path/tmp/check_m_f_$svc $origin_path/tmp/verifying_$svc $origin_path/tmp/answer_error
+
+exit 0 
+		
