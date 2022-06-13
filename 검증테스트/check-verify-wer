@@ -1,0 +1,203 @@
+#!/bin/bash
+
+### input parameter ###
+svc=$1
+testfile_dir=$2
+answer_dir=$3
+date=$4
+
+origin_path=/home/gosh2/smp/c-agent/verify ## 필요시 변경
+bin_dir=/opt/gosh2/bin                     ## 필요시 변경
+wcr_path=/home/gosh2/WCR                   ## 필요시 변경
+
+################### direc & check ###################
+test_path=$origin_path/test_file
+verify_dir=$origin_path/test_file/$svc/veri_dir
+
+if [ ! -d $test_path ];then
+   mkdir $test_path 
+fi
+
+if [ ! -d $test_path/$svc ];then
+   mkdir $test_path/$svc
+fi
+
+if [ ! -d $test_path/$svc/veri_dir ];then
+   mkdir $test_path/$svc/veri_dir
+fi
+
+rm -rf $verify_dir/* $verify_dir.partial $verify_dir.partialindex $verify_dir.result $verify_dir.score $verify_dir.stt_timestamp $verify_dir.sttresult
+#####################################################
+
+if [ $svc == "2" ];then
+	sfp_port="37160"   # 필요시 변경
+
+elif [ $svc == "3" ];then
+	sfp_port="39100"   # 필요시 변경
+
+else
+	sfp_port="37160"   # 필요시 변경
+fi
+
+
+################### wav_conv ###################
+wav_conv()
+{
+  indir=$1
+  
+  for tst1 in $indir/*;
+  do
+	if [[ `file $tst1` == *mu-law* ]];then
+		sox -r 8k -e mu-law -b 8 -c 1 $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t wav $tst1.pcm
+    
+    elif [[ `file $tst1 |tr -d ' '` == *RIFF\(little-endian\)data,WAVEaudio,MicrosoftPCM,*16bit,mono16000Hz* ]];then
+        sox -r 16k -e signed-integer -b 16 -c 1 -L -t wav $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t raw $tst1.pcm
+
+    else
+		sox -r 8k -e signed-integer -b 16 -c 1 -L -t wav $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t wav $tst1.pcm 
+	fi
+  done
+  rm $indir/*.wav
+  find $indir -name "*pcm" -exec rename .wav.pcm .wav {} \;
+}
+#################################################
+
+
+################### check sttsim ###################
+check_sttsim()
+{
+        check_connect=`head -19 /home/gosh2/smp/c-agent/verify/log/$svc/log_dirsim_${svc}_${date} |tail -1`
+        if [[ `echo $check_connect |tr -d ' '` == *ConnectedToFrp* ]];then
+                echo "sttim pass" >> $origin_path/log/$svc/log_verify_${svc}_${date}
+        else
+                echo "dirsim Error"
+                ps -ef | grep dirsim | grep -v grep | grep -v vi | grep -v tail > $origin_path/tmp/check_sttsim_$svc
+                if [ ! -z `awk '{print $2}' $origin_path/tmp/check_sttsim_$svc` ];then
+                        kill -9 `awk '{print $2}' $origin_path/tmp/check_sttsim_$svc`
+#                        echo "kill sttsim process"
+                        exit 0
+                fi
+        fi
+}
+
+################### check sfp ###################
+check_sfp()
+{
+    ps -ef | grep sfp.timestamp.wc |grep -v grep |grep -v tail |grep -v vi > $origin_path/tmp/verify_sfp_$svc
+    if [ -z `awk '{print $2}' $origin_path/tmp/verify_sfp_$svc` ];then
+            echo "SFP is dead" >> $origin_path/log/$svc/log_verify_${svc}_${date}
+            curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0110","resultMsg":"SFP is dead","serviceCode":"'"$svc"'"}'
+            exit 0
+    else
+        echo "SFP is alive" >> $origin_path/log/$svc/log_verify_${svc}_${date}
+    fi
+}
+
+################### sttresult_conv ###################
+sttresult_conv()
+{
+svc=$1
+for tst1 in $origin_path/test_file/$svc/veri_dir.sttresult/*;
+do
+    num=0
+    while [ 1 ]
+    do
+#        echo $tst1
+        nj=`cat $tst1 |jq ."segmentResults[$num]."endTime""`
+        nj2=`cat $tst1 |jq ."segmentResults[$num]."transcript""`
+#        echo $num
+        if [[ $nj -ne "null" ]];then
+            echo $nj2 >> $origin_path/tmp/stt_result_$svc
+            let num=num+1
+        else
+            nj3=`echo $tst1 | awk -F '/' '{print $NF}'`
+            cat $origin_path/tmp/stt_result_$svc |sed 's/"//g' > $tst1
+            rm $origin_path/tmp/stt_result_$svc
+            break
+        fi
+    done
+done
+
+}
+
+################### Copy testfile ###################
+cp $testfile_dir/* $verify_dir/
+
+############# wav_conv & sttsim running check ###############
+wav_conv $verify_dir
+
+################### check result ###################
+
+if [ ! -e $bin_dir/dirsim ];then
+    echo "dirsim Error"
+    exit 0
+fi
+
+$bin_dir/dirsim -p $sfp_port -i 127.0.0.1 -d $verify_dir -s $svc >> $origin_path/log/$svc/log_dirsim_${svc}_${date} &
+
+echo "sttsim done"
+sleep 2
+
+check_sttsim
+
+while [ 1 ]
+do
+	input_file_count=`ls $verify_dir | wc -l`
+	output_file_dir=$verify_dir.sttresult
+	output_file_count=`ls $output_file_dir |wc -l`
+
+	if [ "$input_file_count" -eq "$output_file_count" ];then
+		### sttresult_conv ###
+		sttresult_conv $svc
+		grep -rn F $output_file_dir > $origin_path/tmp/check_m_f_$svc
+		if [ ! -z $origin_path/tmp/check_m_f_$svc ];then
+			nohup $wcr_path/backup-compute-wcr ark:$answer_dir $output_file_dir > $origin_path/tmp/cer_$svc &
+			
+            while [ 1 ]
+			do
+				nj1=`grep "No hypothesis" $origin_path/tmp/cer_$svc`
+				nj3=`tail -1 $origin_path/tmp/cer_$svc`
+
+				if [ ! -z "$nj1" ];then
+                    cer_check="cer_fail"
+					break
+
+				elif [[ "$nj3" =~ Over ]];then
+                    cer_check="cer_pass"
+					nj=`tail -1 $origin_path/tmp/cer_$svc |awk '{print $2}' |cut -d '(' -f1`
+					break					
+				fi
+			done
+            
+            if [ "$cer_check" == "cer_fail" ];then
+                echo "Answer File Error"
+
+            elif [ "$cer_check" == "cer_pass" ];then
+                nohup $wcr_path/backup-compute-wcr --word-error-rate=true ark:$answer_dir $output_file_dir > $origin_path/tmp/wer_$svc &
+
+                while [ 1 ]
+                do
+                    na1=`grep "No hypothesis" $origin_path/tmp/wer_$svc`
+                    na3=`tail -1 $origin_path/tmp/wer_$svc`
+
+                    if [ ! -z "$na1" ];then
+                        echo "WER Fail"
+                        break
+                    elif [[ "$na3" =~ Over ]];then
+                        na=`tail -1 $origin_path/tmp/wer_$svc |awk '{print $2}' |cut -d '(' -f1`
+                        echo "score : $nj $na"
+                        break
+                    fi
+                done
+            fi
+
+		else
+			echo "contain F sttresult error"
+		fi
+		break
+	fi
+done
+#rm -rf $origin_path/tmp/wcr_$svc $origin_path/tmp/check_m_f_$svc $origin_path/tmp/verifying_$svc $origin_path/tmp/answer_error
+
+exit 0 
+		
