@@ -5,8 +5,9 @@ corpus_filedir=$2
 svc=$3
 lmtype=$4
 
-lmtooldir=/home/asr1/lm-tools-$svc        ## 필요시 변경
-origin_path=/home/asr1/smp/t-agent/train  ## 필요시 변경
+lmtooldir=/home/asr1/lm-tools-$svc								## 필요시 변경
+origin_path=/home/asr1/smp/t-agent/train						## 필요시 변경
+output_modelpath=/home/asr1/smp/t-agent/train/trainedModel/svc	## 필요시 변경
 
 domaindir=`cat $lmtooldir/call.json | jq .domain_corpus |sed 's/\"//g'`
 basedir1=`cat $lmtooldir/call.json | jq .modeldir |sed 's/\"//g'`
@@ -152,12 +153,12 @@ if [ $lmtype == "CLASS" ];then
 			
 			mv $result_foldername $model_time
 			tar -zcf model_$svc.tar.gz $model_time
-	        mv model_$svc.tar.gz /home/asr1/smp/t-agent/train/trainedModel/svc/$svc/
-			chmod 777 /home/asr1/smp/t-agent/train/trainedModel/svc/$svc/model_$svc.tar.gz
+	        mv model_$svc.tar.gz $output_modelpath/$svc/
+			chmod 777 $output_modelpath/$svc/model_$svc.tar.gz
 
-			rm -rf $class_output_dir/$result_foldername $lmtooldir/$basedir/enc-out/classlms/$model_time
+			rm -rf $class_output_dir/$result_foldername $lmtooldir/$basedir/enc-out/classlms/$model_time $lmtooldir/$basedir/class-text-dir/$result_foldername
 		    echo "Complete & Success" >> $logdir/$svc/log_learning_${svc}_${date}
-			echo "MODEL_PATH : /home/asr1/smp/t-agent/train/trainedModel/svc/$svc/model_$svc.tar.gz" >> $logdir/$svc/log_learning_${svc}_${date}
+			echo "MODEL_PATH : $output_modelpath/$svc/model_$svc.tar.gz" >> $logdir/$svc/log_learning_${svc}_${date}
 			curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"C1000","resultMsg":"Success","serviceCode":"'"$svc"'","modelPath":"'"$origin_path/trainedModel/svc/$svc/model_$svc.tar.gz"'","lmType":"'"$lmtype"'"}'
 			echo "[-------------------------------]" >> $logdir/$svc/log_learning_${svc}_${date}
 			echo "END :$(date +'%F-%H-%M-%S-%N')" >> $logdir/$svc/log_learning_${svc}_${date}
