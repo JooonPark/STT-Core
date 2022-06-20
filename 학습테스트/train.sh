@@ -58,12 +58,18 @@ echo "[-------------------------------]" >> $logdir/$svc/log_learning_${svc}_${d
 
 ############ learning ###############
 echo "[------Stage 2 - Learning ------]" >> $logdir/$svc/log_learning_${svc}_${date}
+
 cp -rf $corpus_filedir $lndir/class.txt 
 echo "Copy $corpus_filedir to $lndir/class.txt" >> $logdir/$svc/log_learning_${svc}_${date}
 cd $lmtooldir 
+
 nohup ./build_asr_model call.json > $logdir/$svc/log_$svc & 
 sleep 2
-result_foldername=`head -6 $logdir/$svc/log_$svc |tail -1 |cut -d'/' -f2- |awk -F '/' '{print $NF}' | sed 's/.$//g'`
+
+#result_foldername=`head -6 $logdir/$svc/log_$svc |tail -1 |cut -d'/' -f2- |awk -F '/' '{print $NF}' | sed 's/.$//g'`
+str1=`head -9 $logdir/$svc/log_$svc |tail -1 |awk '{print $3}'|sed 's/-//g'|sed 's/://g'`
+result_foldername=`echo ${str1:2}`
+
 class_output_dir=$lmtooldir/$basedir/class-fst-dir/
 ###########  Class LM #############
 if [ $lmtype == "CLASS" ];then
@@ -142,7 +148,8 @@ if [ $lmtype == "CLASS" ];then
 
 		    cd $lmtooldir/$basedir/enc-out/classlms
 			model_time=`echo "$(date +'%y%m%d%H%M%S')"`
-			echo $model_time
+			echo $result_foldername $model_time
+			
 			mv $result_foldername $model_time
 			tar -zcf model_$svc.tar.gz $model_time
 	        mv model_$svc.tar.gz /home/asr1/smp/t-agent/train/trainedModel/svc/$svc/
