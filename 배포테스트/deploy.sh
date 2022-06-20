@@ -5,6 +5,7 @@ svc=$2
 lmtype=$3
 
 origin_path=/home/gosh2/smp/r-agent/deploy ## 필요시 변경
+
 date=`echo "$(date +'%F-%H-%M-%S-%N')"`
 
 if [ ! -d $origin_path/tmp ];then
@@ -29,9 +30,8 @@ find $logdir/$svc -mtime +30 -print -exec rm -f {} \;
 ################### Model check ###################
 ## CLASS LM ##
 class_info="HCLG.class"
-phone_info="phones.txt"
 symbo_info="symbols.enc"
-words_info="words.txt"
+makes_info="make_time.txt"
 tmp_info="tmp"
 
 ## SERVICE LM ##
@@ -70,7 +70,7 @@ if [ $lmtype == "CLASS" ];then
 	gt=`cat tar_info | head -1 | sed 's/\///g'`
 
 	class_real_dir=$rt/$gt
-	if [ ! -e $class_real_dir/$class_info ] || [ ! -e $class_real_dir/$phone_info ] || [ ! -e $class_real_dir/$words_info ] || [ ! -e $class_real_dir/$symbo_info ] || [ ! -d $class_real_dir/$tmp_info ];then
+	if [ ! -e $class_real_dir/$class_info ] || [ ! -e $class_real_dir/$makes_info ] || [ ! -e $class_real_dir/$symbo_info ] || [ ! -d $class_real_dir/$tmp_info ];then
 		result='{"resultCode":"E0100","resultMsg":"Model File Error","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
 		echo $result >> $origin_path/log/$svc/log_deploy_${svc}_${date}
 		echo $result

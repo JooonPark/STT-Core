@@ -183,7 +183,9 @@ if [ "$new_classlm_dir" == "$model_after" ];then
             if [[ $line =~ 'Connected SD' ]]; then
                 
                 echo "[$(date +'%F-%H-%M-%S-%N')] stop" >> $origin_path/log/$svc/log_real_${svc}_${date}
-                pkill tail
+                abcde=`ps -ef |grep "tail $log_path/kfp/kfp.log.${svc}.${week_after}" |awk '{print $2}'`
+                kill -9 $abcde
+#                pkill tail
             fi
     done;
 	
