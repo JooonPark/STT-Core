@@ -42,7 +42,7 @@ ps -ef | grep build_asr_model | grep -v grep > $origin_path/tmp/lm-check
 if [ ! -z `awk '{print $2}' $origin_path/tmp/lm-check` ];then
 	learnsvc=`awk '{print $NF}' $origin_path/tmp/lm-check`
 	echo "This Server is Already learning" > $logdir/$svc/log_learning_already_$svc
-	curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E9000","resultMsg":"Already In Use(Training)","serviceCode":"'"$learnsvc"'"}'
+	curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E9000","resultMsg":"Already In Use(Training)","serviceCode":"'"$svc"'","lmtype":"'"$lmtype'""}'
 	exit 0
 fi
 
