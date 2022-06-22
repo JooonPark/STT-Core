@@ -54,7 +54,7 @@ ch_svc=`awk '{print $10}' $origin_path/tmp/checkone-check_$svc`
 if [ "$svc" == "$ch_svc" ];then
 	if [ $response_check -eq "0" ];then
 		echo "Already In Use(Check-one)" > $log_PFile
-		curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0009","resultMsg":"Already In Use(Check-one)","serviceCode":"'"$svc"'"}'
+		curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0009","resultMsg":"Already In Use(Check-one)","serviceCode":"'"$svc"'"}'
         echo "[-------------------------------]" >> $log_PFile
         echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
 
@@ -109,7 +109,7 @@ if [ -f $testfile_dir ];then
 	if [ $testfile_format != "wav" ] &&  [ $testfile_format != "pcm" ];then
 		if [ $response_check -eq "0" ];then
 			echo "Inputfile is not wav or pcm" >> $log_PFile
-			curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0002","resultMsg":"Check File type","serviceCode":"'"$svc"'"}'
+			curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0002","resultMsg":"Check File type","serviceCode":"'"$svc"'"}'
             echo "[-------------------------------]" >> $log_PFile
             echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
 
@@ -128,7 +128,7 @@ if [ -f $testfile_dir ];then
 else
 	if [ $response_check -eq "0" ];then
 		echo "$testfile_dir is not file" >> $log_TFile
-		curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0003","resultMsg":"Input is directory","serviceCode":"'"$svc"'"}'
+		curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0003","resultMsg":"Input is directory","serviceCode":"'"$svc"'"}'
         echo "[-------------------------------]" >> $log_PFile
         echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
 		process_kill
@@ -156,7 +156,7 @@ if [ -e $origin_path/check-one ];then
 else
     if [ $response_check -eq "0" ];then
         echo "Runfile is not exist" >> $log_PFile
-        curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0004","resultMsg":"Run file Error","serviceCode":"'"$svc"'"}'
+        curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0004","resultMsg":"Run file Error","serviceCode":"'"$svc"'"}'
         echo "[-------------------------------]" >> $log_PFile
         echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
         process_kill
@@ -186,7 +186,7 @@ if [ $response_check -eq "0" ];then
 		echo $nj
 		if [ "$nj" == "Client Error" ];then
 			echo "Client Error" >> $log_PFile
-			curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0005","resultMsg":"Client Error","serviceCode":"'"$svc"'"}'
+			curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0005","resultMsg":"Client Error","serviceCode":"'"$svc"'"}'
 			break
 
 		elif [ "$nj" == "filename" ];then
@@ -197,12 +197,12 @@ if [ $response_check -eq "0" ];then
 			result_file_path=$origin_path/svc/$svc/sttResult/$result_filename
 
 			echo $result_file_path >> $log_PFile
-			curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"C0001","resultMsg":"Success","serviceCode":"'"$svc"'","sttResultFilePath":"'"$result_file_path"'"}'
+			curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"C0001","resultMsg":"Success","serviceCode":"'"$svc"'","sttResultFilePath":"'"$result_file_path"'"}'
 			break
 
 		elif [ "$nj" == "contain F sttresult error" ];then
 			echo "Single action verification Fail" >> $log_PFile
-			curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0001","resultMsg":"Single action verification Fail","serviceCode":"'"$svc"'"}'
+			curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0001","resultMsg":"Single action verification Fail","serviceCode":"'"$svc"'"}'
 			break
 		fi
 	done
