@@ -27,7 +27,9 @@ log_TFile=$origin_path/log/$svc/log_verify_already_${svc}_${date}
 ######################################################
 # 30 Days over file Delete
 
-find $logdir/$svc -mtime +30 -print -exec rm -f {} \;
+if [ ! -z $logdir ];then
+	find $logdir/$svc -mtime +30 -print -exec rm -f {} \;
+fi
 
 #########################################################
 process_kill()

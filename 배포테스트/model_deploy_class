@@ -146,17 +146,30 @@ fi
 
 function kep_kill()
 {
-ps -ef | grep -E "kep".+" "+$svc$ |grep -v grep |grep -v tail |grep -v vi > $origin_path/tmp/progtemp_$svc
-if [ ! -z `awk '{print $2}' $origin_path/tmp/progtemp_$svc` ];then
-	kill -9 `awk '{print $2}' $origin_path/tmp/progtemp_$svc`
+ps -ef | grep -E "kep".+" "+$svc$ |grep -v grep |grep -v tail |grep -v vi > $origin_path/tmp/progtemp_kep_$svc
+if [ ! -z `awk '{print $2}' $origin_path/tmp/progtemp_kep_$svc` ];then
+	kill -9 `awk '{print $2}' $origin_path/tmp/progtemp_kep_$svc`
 	echo "[$(date +'%F-%H-%M-%S-%N')] Kill ServiceCode $svc KEP process" >> $log_PFile
     echo "[$(date +'%F-%H-%M-%S-%N')]" >> $log_PFile
 fi
 }
 
-kep_kill
+function kfp_kill()
+{
+ps -ef | grep -E "kfp".+" "+$svc$ |grep -v grep |grep -v tail |grep -v vi > $origin_path/tmp/progtemp_kfp_$svc
+if [ ! -z `awk '{print $2}' $origin_path/tmp/progtemp_kfp_$svc` ];then
+    kill -9 `awk '{print $2}' $origin_path/tmp/progtemp_kfp_$svc`
+    echo "[$(date +'%F-%H-%M-%S-%N')] Kill ServiceCode $svc KFP process" >> $log_PFile
+    echo "[$(date +'%F-%H-%M-%S-%N')]" >> $log_PFile
+fi
+}
 
-rm $origin_path/tmp/progtemp_$svc
+kep_kill
+sleep 1
+kfp_kill
+
+rm $origin_path/tmp/progtemp_kep_$svc
+rm $origin_path/tmp/progtemp_kfp_$svc
 
 echo $svc > $origin_path/tmp/deploying_$svc
 sleep 3

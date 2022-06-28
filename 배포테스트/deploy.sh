@@ -22,10 +22,11 @@ fi
 
 
 ##################################################
-
 # 30 Days over file Delete
 
-find $logdir/$svc -mtime +30 -print -exec rm -f {} \;
+if [ ! -z $logdir ];then
+	find $logdir/$svc -mtime +30 -print -exec rm -f {} \;
+fi
 
 ################### Model check ###################
 ## CLASS LM ##
