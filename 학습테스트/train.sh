@@ -162,6 +162,7 @@ if [ $lmtype == "CLASS" ];then
 				echo "Complete & Success" >> $logdir/$svc/log_learning_${svc}_${date}
 				echo "MODEL_PATH : $output_modelpath/$svc/model_$svc.tar.gz" >> $logdir/$svc/log_learning_${svc}_${date}
 				curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"C1000","resultMsg":"Success","serviceCode":"'"$svc"'","modelPath":"'"$origin_path/trainedModel/svc/$svc/model_$svc.tar.gz"'","lmType":"'"$lmtype"'"}'
+				rm -rf $lndir/class.txt
 				echo "[-------------------------------]" >> $logdir/$svc/log_learning_${svc}_${date}
 				echo "END :$(date +'%F-%H-%M-%S-%N')" >> $logdir/$svc/log_learning_${svc}_${date}
 				break
