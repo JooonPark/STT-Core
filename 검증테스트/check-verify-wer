@@ -197,7 +197,9 @@ do
 		break
 	fi
 done
-#rm -rf $origin_path/tmp/wcr_$svc $origin_path/tmp/check_m_f_$svc $origin_path/tmp/verifying_$svc $origin_path/tmp/answer_error
+
+### 모든것이 끝나고 검증에 사용된 산출물 모두 삭제 ###
+rm -rf $verify_dir/* $verify_dir.partial $verify_dir.partialindex $verify_dir.result $verify_dir.score $verify_dir.stt_timestamp $verify_dir.sttresult
 
 exit 0 
 		
