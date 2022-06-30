@@ -200,11 +200,19 @@ if [ $response_check -eq "0" ];then
 
 			echo $result_file_path >> $log_PFile
 			curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"C0001","resultMsg":"Success","serviceCode":"'"$svc"'","sttResultFilePath":"'"$result_file_path"'"}'
+
+			### 단건테스트에 사용된 음성 및 stt결과 삭제 ###
+			rm -rf $origin_path/client-one/svc/$svc/*
+
 			break
 
 		elif [ "$nj" == "contain F sttresult error" ];then
 			echo "Single action verification Fail" >> $log_PFile
 			curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0001","resultMsg":"Single action verification Fail","serviceCode":"'"$svc"'"}'
+
+			### 단건테스트에 사용된 음성 및 stt결과 삭제 ###ㅑ
+			rm -rf $origin_path/client-one/svc/$svc/*
+
 			break
 		fi
 	done

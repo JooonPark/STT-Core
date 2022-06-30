@@ -108,6 +108,9 @@ elif [ $response_check -eq "1" ];then
 			result='{"resultCode":"C0001","resultMsg":"Success"}'
 		    echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
 			echo $result
+			
+			### 단건 테스트 이후 음성 및 stt결과 삭제 ###
+			rm -rf $verify_dir/*
 			break
 #			result='{"resultCode":"E0110","resultMsg":"Single action verification Fail"}'
 #			echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
@@ -115,6 +118,8 @@ elif [ $response_check -eq "1" ];then
 #			break
 		fi
 	done
+
+
 	exit 0
 
 ### type error ###
@@ -122,7 +127,7 @@ else
     result='{"resultCode":"E0007","resultMsg":"Response Type Error"}'
     echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
     echo $result
-
+	
 	exit 0
 fi
 
