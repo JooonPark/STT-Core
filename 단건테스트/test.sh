@@ -216,7 +216,7 @@ if [ $response_check -eq "0" ];then
 			break
 		fi
 	done
-
+    rm $testfile_dir
 #### response type 1 ####
 else
 
