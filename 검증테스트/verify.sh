@@ -143,6 +143,9 @@ do
 	fi
 done
 
+### 검증이 끝나고 사용한 음성 데이터 및 정답지 삭제
+rm -rf $testfile_dir/* $answer_dir 
+
 echo "[-------------------------------]" >> $log_PFile
 echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
 
