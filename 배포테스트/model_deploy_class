@@ -165,13 +165,15 @@ fi
 }
 
 kep_kill
+
 sleep 1
-kfp_kill
+#kfp_kill
 
 rm $origin_path/tmp/progtemp_kep_$svc
 rm $origin_path/tmp/progtemp_kfp_$svc
 
 echo $svc > $origin_path/tmp/deploying_$svc
+
 sleep 3
 
 ################### Model Check ###################
@@ -184,14 +186,11 @@ if [ "$new_classlm_dir" == "$model_after" ];then
     export LANG=en
 
     week_before=`date +%a`
-#	echo $week_before
 
     week_after=`echo $week_before |tr [A-Z] [a-z]`
-#	echo $week_after
 	
 	echo "[$(date +'%F-%H-%M-%S-%N')]" > $origin_path/log/$svc/log_real_${svc}_${date}
-#    timeout 32s tail $log_path/kep/kep.log.${svc}.${week_after} -n0 -F | while read line;
-    timeout 32s tail $log_path/kfp/kfp.log.${svc}.${week_after} -n0 -F | while read line;
+    timeout 500s tail $log_path/kfp/kfp.log.${svc}.${week_after} -n0 -F | while read line;
     do		
             if [[ $line =~ 'Connected SD' ]]; then
                 
@@ -201,7 +200,9 @@ if [ "$new_classlm_dir" == "$model_after" ];then
 #                pkill tail
             fi
     done;
-	
+
+	sleep 1	
+
 	chk_deploy=`cat $origin_path/log/$svc/log_real_${svc}_${date} |tail -1 |head -1` 	
 	if [[ $chk_deploy =~ "stop" ]];then
 		result='{"resultCode":"C0100","resultMsg":"Success","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
