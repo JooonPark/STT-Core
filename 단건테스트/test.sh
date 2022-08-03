@@ -214,6 +214,18 @@ if [ $response_check -eq "0" ];then
 			rm -rf $origin_path/client-one/svc/$svc/*
 
 			break
+
+        elif [ "$nj" == "filetype" ];then
+            echo "Check File type" >> $log_PFile
+            curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0002","resultMsg":"Check File type","serviceCode":"'"$svc"'"}'
+
+            ### 단건테스트에 사용된 음성 및 stt결과 삭제 ###ㅑ
+            rm -rf $origin_path/client-one/svc/$svc/*
+
+            break
+
+
+
 		fi
 	done
     rm $testfile_dir
