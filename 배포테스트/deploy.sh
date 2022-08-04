@@ -20,7 +20,7 @@ if [ ! -d $origin_path/log/$svc ];then
    mkdir $origin_path/log/$svc
 fi
 
-
+logdir=$origin_path/log
 ##################################################
 # 30 Days over file Delete
 
