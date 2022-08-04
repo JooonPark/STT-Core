@@ -190,7 +190,7 @@ if [ "$new_classlm_dir" == "$model_after" ];then
     week_after=`echo $week_before |tr [A-Z] [a-z]`
 	
 	echo "[$(date +'%F-%H-%M-%S-%N')]" > $origin_path/log/$svc/log_real_${svc}_${date}
-    timeout 500s tail $log_path/kfp/kfp.log.${svc}.${week_after} -n0 -F | while read line;
+    timeout 330s tail $log_path/kfp/kfp.log.${svc}.${week_after} -n0 -F | while read line;
     do		
             if [[ $line =~ 'Connected SD' ]]; then
                 
