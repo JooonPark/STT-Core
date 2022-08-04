@@ -206,21 +206,42 @@ if [ "$new_classlm_dir" == "$model_after" ];then
 	chk_deploy=`cat $origin_path/log/$svc/log_real_${svc}_${date} |tail -1 |head -1` 	
 	if [[ $chk_deploy =~ "stop" ]];then
 		result='{"resultCode":"C0100","resultMsg":"Success","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
-		rm -rf $model_before
-		echo $result
-		echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Remove Before Model $model_before" >> $log_PFile
-		echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
-		echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
-		exit 0
-	
+		
+		model_before_version=`echo $model_before | awk -F '/' '{print $NF}'`
+
+		if [ $model_before_version != "dummy" ];then
+			rm -rf $model_before
+			echo $result
+			echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Remove Before Model $model_before" >> $log_PFile
+			echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
+			echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
+			exit 0
+		else
+			echo $result
+			echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Don't Remove Before Model dummy" >> $log_PFile
+			echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
+			echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
+			exit 0
+		fi	
 	else
 		result='{"resultCode":"E0400","resultMsg":"Model Load Fail","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
-		rm -rf $model_before
-		echo $result
-		echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Model Load Fail" >> $log_PFile
-		echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
-		echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
-		exit 0
+		
+		model_before_version=`echo $model_before | awk -F '/' '{print $NF}'`
+		
+		if [ $model_before_version != "dummy" ];then
+			rm -rf $model_before
+			echo $result
+			echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Remove Before Model $model_before" >> $log_PFile
+			echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
+			echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
+			exit 0
+		else
+			echo $result
+			echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Don't Remove Before Model dummy" >> $log_PFile
+			echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
+			echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
+			exit 0
+		fi	
 	fi
 
 else
