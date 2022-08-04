@@ -137,16 +137,13 @@ do
 		echo "CER : $cer1 , WER : $wer1"  >> $log_PFile
 		curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"C0010","resultMsg":"success","serviceCode":"'"$svc"'","cerRate":"'"$cer1"'","werRate":"'"$wer1"'"}'
 		echo "{"resultCode":"C0010","resultMsg":"success","serviceCode":""$svc"","cerRate":""$cer1"","werRate":""$wer1""} done" >> $log_PFile
-
+		
+		break	
 	elif [ "$nj" == "filetype" ];then
         echo "Check File type" >> $log_PFile
         curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0020","resultMsg":"Check File type","serviceCode":"'"$svc"'"}'
 
-        ### 단건테스트에 사용된 음성 및 stt결과 삭제 ###ㅑ
-        rm -rf $origin_path/client-one/svc/$svc/*
-
         break
-#		rm $origin_path/tmp/recogRate_$svc
 	fi
 done
 
