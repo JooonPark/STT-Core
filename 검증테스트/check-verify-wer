@@ -32,7 +32,7 @@ rm -rf $verify_dir/* $verify_dir.partial $verify_dir.partialindex $verify_dir.re
 if [ $svc == "2" ];then
 	sfp_port="37160"   # 필요시 변경
 
-elif [ $svc == "3" ];then
+elif [ $svc == "4" ];then
 	sfp_port="39100"   # 필요시 변경
 
 else
@@ -63,7 +63,7 @@ wav_conv()
 		rm $indir/*.wav
 		find $indir -name "*pcm" -exec rename .wav.pcm .wav {} \;
 
-    elif [ "$svc" -eq "3" ];then
+    elif [ "$svc" -eq "4" ];then
 
         for tst1 in $indir/*;
         do
