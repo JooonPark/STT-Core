@@ -50,8 +50,8 @@ wav_conv()
         for tst1 in $indir/*;
         do
 
-        if [[ `file $tst1 |tr -d ' '` == *RIFF\(little-endian\)data,WAVEaudio,MicrosoftPCM,*16bit,mono8000Hz* ]];then
-#            sox -r 8k -e signed-integer -b 16 -c 1 -L -t wav $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t raw $tst1.pcm
+        if [[ `file $tst1 |tr -d ' '` != *RIFF\(little-endian\)data,WAVEaudio,MicrosoftPCM,*16bit,mono8000Hz* ]];then
+			echo "$tst1 need check" >> $origin_path/log/$svc/log_verify_${svc}_${date}
 			echo "filetype" >> $origin_path/log/$svc/log_verify_${svc}_${date}
 			exit 0
 
@@ -64,8 +64,8 @@ wav_conv()
         for tst1 in $indir/*;
         do
 
-        if [[ `file $tst1 |tr -d ' '` == *RIFF\(little-endian\)data,WAVEaudio,MicrosoftPCM,*16bit,mono16000Hz* ]];then
-#            sox -r 16k -e signed-integer -b 16 -c 1 -L -t wav $tst1 -r 16k -e signed-integer -b 16 -c 1 -L -t raw $tst1.pcm
+        if [[ `file $tst1 |tr -d ' '` != *RIFF\(little-endian\)data,WAVEaudio,MicrosoftPCM,*16bit,mono16000Hz* ]];then
+			echo "$tst1 need check" >> $origin_path/log/$svc/log_verify_${svc}_${date}
 			echo "filetype" >> $origin_path/log/$svc/log_verify_${svc}_${date}
 			exit 0
 
@@ -168,22 +168,27 @@ do
 		grep -rn F $output_file_dir > $origin_path/tmp/check_m_f_$svc
 		if [ ! -z $origin_path/tmp/check_m_f_$svc ];then
 			nohup $wcr_path/backup-compute-wcr ark:$answer_dir $output_file_dir > $origin_path/tmp/cer_$svc &
-			
-            while [ 1 ]
+		
+			while [ 1 ]
 			do
-				nj1=`grep "No hypothesis" $origin_path/tmp/cer_$svc`
-				nj3=`tail -1 $origin_path/tmp/cer_$svc`
-
-				if [ ! -z "$nj1" ];then
-                    cer_check="cer_fail"
+				wcr_check=`ps -ef |grep backup-compute-wcr |grep -v grep`
+				if [ -z "$wcr_check" ];then
+					echo "wcr done" > $origin_path/tmp/wcrdone
 					break
-
-				elif [[ "$nj3" =~ Over ]];then
-                    cer_check="cer_pass"
-					nj=`tail -1 $origin_path/tmp/cer_$svc |awk '{print $2}' |cut -d '(' -f1`
-					break					
+				else
+					continue
 				fi
 			done
+	
+			nj1=`tail -1 $origin_path/tmp/cer_$svc`
+
+			if [[ "$nj1" =~ Over ]];then
+				cer_check="cer_pass"
+				nj=`tail -1 $origin_path/tmp/cer_$svc |awk '{print $2}' |cut -d '(' -f1`
+
+			else
+				cer_check="cer_fail"
+			fi
             
             if [ "$cer_check" == "cer_fail" ];then
                 echo "Answer File Error"
@@ -193,13 +198,8 @@ do
 
                 while [ 1 ]
                 do
-                    na1=`grep "No hypothesis" $origin_path/tmp/wer_$svc`
                     na3=`tail -1 $origin_path/tmp/wer_$svc`
-
-                    if [ ! -z "$na1" ];then
-                        echo "WER Fail"
-                        break
-                    elif [[ "$na3" =~ Over ]];then
+                    if [[ "$na3" =~ Over ]];then
                         na=`tail -1 $origin_path/tmp/wer_$svc |awk '{print $2}' |cut -d '(' -f1`
                         echo "score : $nj $na"
                         break
