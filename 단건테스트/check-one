@@ -26,31 +26,42 @@ fi
 ################### wav_conv ###################
 wav_conv()
 {
-  indir=$1
-  
-  for tst1 in $indir/*;
-  do
-	#echo $tst1
-	if [[ `file $tst1` == *mu-law* ]];then
-		sox -r 8k -e mu-law -b 8 -c 1 $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t raw $tst1.pcm
+	indir=$1
 
-	elif [[ `file $tst1 |tr -d ' '` == *RIFF\(little-endian\)data,WAVEaudio,MicrosoftPCM,*16bit,mono16000Hz* ]];then
-		sox -r 16k -e signed-integer -b 16 -c 1 -L -t wav $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t raw $tst1.pcm
+	if [ "$svc" -eq "2" ] || [ "$svc" -eq "3" ];then
+		
+		for tst1 in $indir/*;
+		do
+		
+		if [[ `file $tst1 |tr -d ' '` == *RIFF\(little-endian\)data,WAVEaudio,MicrosoftPCM,*16bit,mono8000Hz* ]];then
+			sox -r 8k -e signed-integer -b 16 -c 1 -L -t wav $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t raw $tst1.pcm
+		else
+			if [ $response_check -eq "0" ];then
+				echo "filetype" >> $origin_path/log/$svc/log_checkone_${svc}_${date}					
+				exit 0
 
-	else
-		sox -r 8k -e signed-integer -b 16 -c 1 -L -t wav $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t raw $tst1.pcm
+			elif [ $response_check -eq "1" ];then
+	            result='{"resultCode":"E0002","resultMsg":"Check File type"}'
+    	        echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
+        	    echo $result
+				exit 0
+			fi
+		fi
+	
+		done
+	
+		rm $indir/*.wav
+
+		find $indir -name "*pcm" -exec rename .wav.pcm .pcm {} \;
+	
 	fi
-  done
-
-  rm $indir/*.wav
-  find $indir -name "*pcm" -exec rename .wav.pcm .pcm {} \;
 
 }
 
 run_client()
 {
 	indir=$1
-
+	
 	for tst1 in $indir/*;
 	do
 	   $origin_path/client-one/stt_client -p $vbrgw_port -i 127.0.0.1 -s $svc -f $tst1
@@ -95,8 +106,8 @@ elif [ $response_check -eq "1" ];then
     dirsim_error_check=`cat $origin_path/log/$svc/log_client_${svc}_${date} |head -5 |tail -1 | tr -d ' '`
     if [[ $dirsim_error_check == *RESULT_VOICEKIT_CONNECT_ERROR* ]] || [[ $dirsim_error_check == *RESULT_VOICEKIT_UNKOWN_ERROR* ]];then
 		result='{"resultCode":"E0005","resultMsg":"Client Error"}'
-        echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
 		echo $result
+        echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
         exit 0
     fi
 
@@ -106,16 +117,12 @@ elif [ $response_check -eq "1" ];then
 
 		if [ "$input_file_count" -eq 2 ];then
 			result='{"resultCode":"C0001","resultMsg":"Success"}'
-		    echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
 			echo $result
+		    echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
 			
 			### 단건 테스트 이후 음성 및 stt결과 삭제 ###
 			rm -rf $verify_dir/*
 			break
-#			result='{"resultCode":"E0110","resultMsg":"Single action verification Fail"}'
-#			echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
-#			echo $result
-#			break
 		fi
 	done
 
@@ -125,8 +132,8 @@ elif [ $response_check -eq "1" ];then
 ### type error ###
 else
     result='{"resultCode":"E0007","resultMsg":"Response Type Error"}'
+	echo $result
     echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
-    echo $result
 	
 	exit 0
 fi
