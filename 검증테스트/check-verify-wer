@@ -32,7 +32,7 @@ rm -rf $verify_dir/* $verify_dir.partial $verify_dir.partialindex $verify_dir.re
 if [ $svc == "2" ];then
 	sfp_port="37160"   # 필요시 변경
 
-elif [ $svc == "4" ];then
+elif [ $svc == "3" ];then
 	sfp_port="39100"   # 필요시 변경
 
 else
@@ -45,7 +45,7 @@ wav_conv()
 {
     indir=$1
 
-    if [ "$svc" -eq "2" ];then
+    if [ "$svc" -eq "2" ] || [ "$svc" -eq "3" ];then
 
         for tst1 in $indir/*;
         do
@@ -62,23 +62,6 @@ wav_conv()
 
 		rm $indir/*.wav
 		find $indir -name "*pcm" -exec rename .wav.pcm .wav {} \;
-
-    elif [ "$svc" -eq "4" ];then
-
-        for tst1 in $indir/*;
-        do
-
-        if [[ `file $tst1 |tr -d ' '` != *RIFF\(little-endian\)data,WAVEaudio,MicrosoftPCM,*16bit,mono16000Hz* ]];then
-			echo "$tst1 need check" >> $origin_path/log/$svc/log_verify_${svc}_${date}
-			echo "filetype" >> $origin_path/log/$svc/log_verify_${svc}_${date}
-			exit 0
-		else
-			sox -r 16k -e signed-integer -b 16 -c 1 -L -t wav $tst1 -r 16k -e signed-integer -b 16 -c 1 -L -t wav $tst1.pcm
-        fi
-
-        done
-		rm $indir/*.wav
-		find $indir -name "*.pcm" -exec rename .wav.pcm .wav {} \;
 
     fi
 
