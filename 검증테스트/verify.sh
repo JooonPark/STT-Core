@@ -140,10 +140,10 @@ do
 		
 		break	
 	elif [ "$nj" == "filetype" ];then
-        echo "Check File type" >> $log_PFile
-        curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0020","resultMsg":"Check File type","serviceCode":"'"$svc"'"}'
+		echo "Check File type" >> $log_PFile
+		curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0020","resultMsg":"Check File type","serviceCode":"'"$svc"'"}'
 
-        break
+		break
 	fi
 done
 
