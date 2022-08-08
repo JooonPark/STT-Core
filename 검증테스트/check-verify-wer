@@ -54,10 +54,14 @@ wav_conv()
 			echo "$tst1 need check" >> $origin_path/log/$svc/log_verify_${svc}_${date}
 			echo "filetype" >> $origin_path/log/$svc/log_verify_${svc}_${date}
 			exit 0
-
+		else
+			sox -r 8k -e signed-integer -b 16 -c 1 -L -t wav $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t wav $tst1.pcm
         fi
 
         done
+
+		rm $indir/*.wav
+		find $indir -name "*pcm" -exec rename .wav.pcm .wav {} \;
 
     elif [ "$svc" -eq "3" ];then
 
@@ -68,10 +72,14 @@ wav_conv()
 			echo "$tst1 need check" >> $origin_path/log/$svc/log_verify_${svc}_${date}
 			echo "filetype" >> $origin_path/log/$svc/log_verify_${svc}_${date}
 			exit 0
-
+		else
+			sox -r 16k -e signed-integer -b 16 -c 1 -L -t wav $tst1 -r 16k -e signed-integer -b 16 -c 1 -L -t wav $tst1.pcm
         fi
 
         done
+		rm $indir/*.wav
+		find $indir -name "*.pcm" -exec rename .wav.pcm .wav {} \;
+
     fi
 
 }
@@ -165,8 +173,11 @@ do
 	if [ "$input_file_count" -eq "$output_file_count" ];then
 		### sttresult_conv ###
 		sttresult_conv $svc
+
 		grep -rn F $output_file_dir > $origin_path/tmp/check_m_f_$svc
-		if [ ! -z $origin_path/tmp/check_m_f_$svc ];then
+		checkmf=`cat $origin_path/tmp/check_m_f_$svc`
+
+		if [ -z "$checkmf" ];then
 			nohup $wcr_path/backup-compute-wcr ark:$answer_dir $output_file_dir > $origin_path/tmp/cer_$svc &
 		
 			while [ 1 ]
@@ -185,27 +196,26 @@ do
 			if [[ "$nj1" =~ Over ]];then
 				cer_check="cer_pass"
 				nj=`tail -1 $origin_path/tmp/cer_$svc |awk '{print $2}' |cut -d '(' -f1`
-
 			else
 				cer_check="cer_fail"
 			fi
-            
-            if [ "$cer_check" == "cer_fail" ];then
-                echo "Answer File Error"
 
-            elif [ "$cer_check" == "cer_pass" ];then
-                nohup $wcr_path/backup-compute-wcr --word-error-rate=true ark:$answer_dir $output_file_dir > $origin_path/tmp/wer_$svc &
+			if [ "$cer_check" == "cer_fail" ];then
+				echo "Answer File Error"
 
-                while [ 1 ]
-                do
-                    na3=`tail -1 $origin_path/tmp/wer_$svc`
-                    if [[ "$na3" =~ Over ]];then
-                        na=`tail -1 $origin_path/tmp/wer_$svc |awk '{print $2}' |cut -d '(' -f1`
-                        echo "score : $nj $na"
-                        break
-                    fi
-                done
-            fi
+			elif [ "$cer_check" == "cer_pass" ];then
+				nohup $wcr_path/backup-compute-wcr --word-error-rate=true ark:$answer_dir $output_file_dir > $origin_path/tmp/wer_$svc &
+
+				while [ 1 ]
+				do
+					na3=`tail -1 $origin_path/tmp/wer_$svc`
+					if [[ "$na3" =~ Over ]];then
+						na=`tail -1 $origin_path/tmp/wer_$svc |awk '{print $2}' |cut -d '(' -f1`
+						echo "score : $nj $na"
+						break
+					fi
+				done
+			fi
 
 		else
 			echo "contain F sttresult error"
