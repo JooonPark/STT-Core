@@ -41,7 +41,7 @@ wav_conv()
 					exit 0
 
 				elif [ $response_check -eq "1" ];then
-		            result='{"resultCode":"E0002","resultMsg":"Check File type"}'
+					result='{"resultCode":"E0002","resultMsg":"Check File type"}'
 					echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
 					echo $result
 					exit 0
