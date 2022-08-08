@@ -58,14 +58,14 @@ if [ $svc -lt 21 ];then
 			if [ $input_check == "CLASS_MODEL_DIR" ];then
 				model_before=`sed -n ''"$inputline"'p' $cfg_path/kep/kep.ini |awk '{print $3}'`
 				if [ "$model_before" == "$new_classlm_dir" ];then
-                        echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Model is same" >> $log_PFile
-						result='{"resultCode":"C0100","resultMsg":"Model is same","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
-						echo $result 
-						echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
-						echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
-                        exit 0
+					echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Model is same" >> $log_PFile
+					result='{"resultCode":"C0100","resultMsg":"Model is same","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
+					echo $result 
+					echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
+					echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
+					exit 0
 
-                        break
+					break
 				else
 					sed -i ''"$inputline"'s@'"$model_before"'@'"$new_classlm_dir"'@' $cfg_path/kep/kep.ini
 					break
@@ -77,42 +77,42 @@ if [ $svc -lt 21 ];then
 
 	### KEP 번호 두자리수 ###
 	elif [ $checksvc -eq "2" ];then
-			inputline_first=`grep -rn KEP_"$svc" $cfg_path/kep/kep.ini |cut -d: -f1`
-			inputline=`expr $inputline_first`
+		inputline_first=`grep -rn KEP_"$svc" $cfg_path/kep/kep.ini |cut -d: -f1`
+		inputline=`expr $inputline_first`
 
-			while [ 1 ]
-			do
-					input_check=`sed -n ''"$inputline"'p' $cfg_path/kep/kep.ini |awk '{print $1}'`
-					if [ $input_check == "CLASS_MODEL_DIR" ];then
-							model_before=`sed -n ''"$inputline"'p' $cfg_path/kep/kep.ini |awk '{print $3}'`
-							if [ "$model_before" == "$new_classlm_dir" ];then
-				                echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Model is same" >> $log_PFile
-								result='{"resultCode":"C0100","resultMsg":"Model is same","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
-								echo $result
-								echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
-								echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
-							    exit 0
+		while [ 1 ]
+		do
+			input_check=`sed -n ''"$inputline"'p' $cfg_path/kep/kep.ini |awk '{print $1}'`
+			if [ $input_check == "CLASS_MODEL_DIR" ];then
+				model_before=`sed -n ''"$inputline"'p' $cfg_path/kep/kep.ini |awk '{print $3}'`
+				if [ "$model_before" == "$new_classlm_dir" ];then
+					echo "[$(date +'%F-%H-%M-%S-%N')] Result        : Model is same" >> $log_PFile
+					result='{"resultCode":"C0100","resultMsg":"Model is same","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
+					echo $result
+					echo "[$(date +'%F-%H-%M-%S-%N')] $result" >> $log_PFile
+					echo "[$(date +'%F-%H-%M-%S-%N')] END" >> $log_PFile
+					exit 0
 
-		                        break
-							else
-								sed -i ''"$inputline"'s@'"$model_before"'@'"$new_classlm_dir"'@' $cfg_path/kep/kep.ini
-								break
-							fi
-					else
-							let inputline=inputline+1
-					fi
-			done
+					break
+				else
+					sed -i ''"$inputline"'s@'"$model_before"'@'"$new_classlm_dir"'@' $cfg_path/kep/kep.ini
+					break
+				fi
+			else
+				let inputline=inputline+1
+			fi
+		done
 	fi 
 
 ### Service code 가 Test Code ###
 else 
-    basedir=$test_modeldir
+	basedir=$test_modeldir
 	new_classlm_ver=`echo $modeldir | awk -F '/' '{print $NF}'`
 
-    echo "[$(date +'%F-%H-%M-%S-%N')] MODE          : TEST service" >> $log_PFile
+	echo "[$(date +'%F-%H-%M-%S-%N')] MODE          : TEST service" >> $log_PFile
 
-    cp -rf $modeldir $basedir/classlms
-    echo "[$(date +'%F-%H-%M-%S-%N')] Copy $modeldir To $basedir/classlms" >> $log_PFile
+	cp -rf $modeldir $basedir/classlms
+	echo "[$(date +'%F-%H-%M-%S-%N')] Copy $modeldir To $basedir/classlms" >> $log_PFile
 
 	new_classlm_dir=$basedir/classlms/$new_classlm_ver
 
@@ -150,7 +150,7 @@ ps -ef | grep -E "kep".+" "+$svc$ |grep -v grep |grep -v tail |grep -v vi > $ori
 if [ ! -z `awk '{print $2}' $origin_path/tmp/progtemp_kep_$svc` ];then
 	kill -9 `awk '{print $2}' $origin_path/tmp/progtemp_kep_$svc`
 	echo "[$(date +'%F-%H-%M-%S-%N')] Kill ServiceCode $svc KEP process" >> $log_PFile
-    echo "[$(date +'%F-%H-%M-%S-%N')]" >> $log_PFile
+	echo "[$(date +'%F-%H-%M-%S-%N')]" >> $log_PFile
 fi
 }
 
@@ -158,9 +158,9 @@ function kfp_kill()
 {
 ps -ef | grep -E "kfp".+" "+$svc$ |grep -v grep |grep -v tail |grep -v vi > $origin_path/tmp/progtemp_kfp_$svc
 if [ ! -z `awk '{print $2}' $origin_path/tmp/progtemp_kfp_$svc` ];then
-    kill -9 `awk '{print $2}' $origin_path/tmp/progtemp_kfp_$svc`
-    echo "[$(date +'%F-%H-%M-%S-%N')] Kill ServiceCode $svc KFP process" >> $log_PFile
-    echo "[$(date +'%F-%H-%M-%S-%N')]" >> $log_PFile
+	kill -9 `awk '{print $2}' $origin_path/tmp/progtemp_kfp_$svc`
+	echo "[$(date +'%F-%H-%M-%S-%N')] Kill ServiceCode $svc KFP process" >> $log_PFile
+	echo "[$(date +'%F-%H-%M-%S-%N')]" >> $log_PFile
 fi
 }
 
@@ -183,23 +183,22 @@ echo "[$(date +'%F-%H-%M-%S-%N')] $new_classlm_dir is new classlm" >> $log_PFile
 echo "[$(date +'%F-%H-%M-%S-%N')] $model_after is model_after" >> $log_PFile
 
 if [ "$new_classlm_dir" == "$model_after" ];then
-    export LANG=en
+	export LANG=en
 
-    week_before=`date +%a`
+	week_before=`date +%a`
 
-    week_after=`echo $week_before |tr [A-Z] [a-z]`
+	week_after=`echo $week_before |tr [A-Z] [a-z]`
 	
 	echo "[$(date +'%F-%H-%M-%S-%N')]" > $origin_path/log/$svc/log_real_${svc}_${date}
-    timeout 330s tail $log_path/kfp/kfp.log.${svc}.${week_after} -n0 -F | while read line;
-    do		
-            if [[ $line =~ 'Connected SD' ]]; then
-                
-                echo "[$(date +'%F-%H-%M-%S-%N')] stop" >> $origin_path/log/$svc/log_real_${svc}_${date}
-                abcde=`ps -ef |grep "tail $log_path/kfp/kfp.log.${svc}.${week_after}" |awk '{print $2}'`
-                kill -9 $abcde
-#                pkill tail
-            fi
-    done;
+	timeout 330s tail $log_path/kfp/kfp.log.${svc}.${week_after} -n0 -F | while read line;
+	do		
+		if [[ $line =~ 'Connected SD' ]]; then
+
+			echo "[$(date +'%F-%H-%M-%S-%N')] stop" >> $origin_path/log/$svc/log_real_${svc}_${date}
+			abcde=`ps -ef |grep "tail $log_path/kfp/kfp.log.${svc}.${week_after}" |awk '{print $2}'`
+			kill -9 $abcde
+		fi
+	done;
 
 	sleep 1	
 
