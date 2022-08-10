@@ -28,7 +28,7 @@ wav_conv()
 {
 	indir=$1
 
-	if [ "$svc" -eq "2" ];then
+	if [ "$svc" -eq "2" ] || [ "$svc" -eq "21" ] || [ "$svc" -eq "23" ];then
 		
 		for tst1 in $indir/*;
 		do
@@ -54,7 +54,7 @@ wav_conv()
 
 		find $indir -name "*pcm" -exec rename .wav.pcm .pcm {} \;
 	
-	elif [ "$svc" -eq "4" ];then
+	elif [ "$svc" -eq "4" ] || [ "$svc" -eq "22" ] || [ "$svc" -eq "24" ];then
 		
 		for tst1 in $indir/*;
 		do
