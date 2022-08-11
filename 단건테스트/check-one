@@ -28,33 +28,7 @@ wav_conv()
 {
 	indir=$1
 
-	if [ "$svc" -eq "2" ] || [ "$svc" -eq "21" ] || [ "$svc" -eq "23" ];then
-		
-		for tst1 in $indir/*;
-		do
-		
-			if [[ `file $tst1 |tr -d ' '` == *RIFF\(little-endian\)data,WAVEaudio,MicrosoftPCM,*16bit,mono8000Hz* ]];then
-				sox -r 8k -e signed-integer -b 16 -c 1 -L -t wav $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t raw $tst1.pcm
-			else
-				if [ $response_check -eq "0" ];then
-					echo "filetype" >> $origin_path/log/$svc/log_checkone_${svc}_${date}					
-					exit 0
-
-				elif [ $response_check -eq "1" ];then
-					result='{"resultCode":"E0002","resultMsg":"Check File type"}'
-					echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
-					echo $result
-					exit 0
-				fi
-			fi
-	
-		done
-	
-		rm $indir/*.wav
-
-		find $indir -name "*pcm" -exec rename .wav.pcm .pcm {} \;
-	
-	elif [ "$svc" -eq "4" ] || [ "$svc" -eq "22" ] || [ "$svc" -eq "24" ];then
+	if [ "$svc" -eq "4" ];then
 		
 		for tst1 in $indir/*;
 		do
@@ -79,6 +53,35 @@ wav_conv()
 		rm $indir/*.wav
 
 		find $indir -name "*pcm" -exec rename .wav.pcm .pcm {} \;
+
+
+	else
+		
+		for tst1 in $indir/*;
+		do
+		
+			if [[ `file $tst1 |tr -d ' '` == *RIFF\(little-endian\)data,WAVEaudio,MicrosoftPCM,*16bit,mono8000Hz* ]];then
+				sox -r 8k -e signed-integer -b 16 -c 1 -L -t wav $tst1 -r 8k -e signed-integer -b 16 -c 1 -L -t raw $tst1.pcm
+			else
+				if [ $response_check -eq "0" ];then
+					echo "filetype" >> $origin_path/log/$svc/log_checkone_${svc}_${date}
+					exit 0
+
+				elif [ $response_check -eq "1" ];then
+					result='{"resultCode":"E0002","resultMsg":"Check File type"}'
+					echo $result >> $origin_path/log/$svc/log_checkone_${svc}_${date}
+					echo $result
+					exit 0
+				fi
+			fi
+	
+		done
+	
+		rm $indir/*.wav
+
+		find $indir -name "*pcm" -exec rename .wav.pcm .pcm {} \;
+
+
 	fi
 
 }
