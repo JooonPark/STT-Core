@@ -80,17 +80,17 @@ if [ $lmtype == "CLASS" ];then
 
 elif [ $lmtype == "SERVICE" ];then
 	echo "Service lm will support" >> $origin_path/log/$svc/log_deploy_${svc}_${date}
-    result='{"resultCode":"E0300","resultMsg":"Service lm will support","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
-    echo $result >> $origin_path/log/$svc/log_deploy_${svc}_${date}
-    echo $result
-
+	result='{"resultCode":"E0300","resultMsg":"Service lm will support","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
+	echo $result >> $origin_path/log/$svc/log_deploy_${svc}_${date}
+	echo $result
+	
 	exit 0
 
 else
 	echo "Invalid lmtype" >> $origin_path/log/$svc/log_deploy_${svc}_${date}
-    result='{"resultCode":"E0300","resultMsg":"Invalid lmtype","serviceCode":"'"$svc"'"}'
-    echo $result >> $origin_path/log/$svc/log_deploy_${svc}_${date}
-    echo $result
+	result='{"resultCode":"E0300","resultMsg":"Invalid lmtype","serviceCode":"'"$svc"'"}'
+	echo $result >> $origin_path/log/$svc/log_deploy_${svc}_${date}
+	echo $result
 
 	exit 0
 fi
@@ -105,8 +105,8 @@ elif [ $lmtype == "SERVICE" ];then
 #	/home/gosh2/smp/r-agent/deploy/model_deploy_service $rt/enc-out/classlms/new_class $svc $date
 	echo "Deploying ServiceLM will support" >> $origin_path/log/$svc/log_deploy_${svc}_${date}
 	result='{"resultCode":"E0300","resultMsg":"Deploying ServiceLM will support","serviceCode":"'"$svc"'","lmType":"'"$lmtype"'"}'
-    echo $result >> $origin_path/log/$svc/log_deploy_${svc}_${date}
-    echo $result
+	echo $result >> $origin_path/log/$svc/log_deploy_${svc}_${date}
+	echo $result
 	
 	echo "[-------------------------------]" >> $origin_path/log/$svc/log_deploy_${svc}_${date}
 	echo "END :$(date +'%F-%H-%M-%S-%N')" >> $origin_path/log/$svc/log_deploy_${svc}_${date}
