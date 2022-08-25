@@ -21,8 +21,8 @@ if [ $testfile_format == "wav" ];then
 	testfile_key=`echo $testfile_dir | awk -F '/' '{print $NF}'| awk -F '.wav' '{print $1}'`
 	testfile_result=$testfile_key.pcm.stt
 elif [ $testfile_format == "pcm" ];then
-    testfile_key=`echo $testfile_dir | awk -F '/' '{print $NF}'| awk -F '.pcm' '{print $1}'`
-    testfile_result=$testfile_key.pcm.stt
+	testfile_key=`echo $testfile_dir | awk -F '/' '{print $NF}'| awk -F '.pcm' '{print $1}'`
+	testfile_result=$testfile_key.pcm.stt
 else 
 	echo ""
 fi
@@ -31,15 +31,15 @@ resultfile=$origin_path/client-one/svc/$svc/$testfile_result
 logdir=$origin_path/log
 
 if [ ! -d $origin_path/tmp ];then
-   mkdir $origin_path/tmp
+	mkdir $origin_path/tmp
 fi
 
 if [ ! -d $logdir ];then
-   mkdir $logdir
+	mkdir $logdir
 fi
 
 if [ ! -d $logdir/$svc ];then
-   mkdir $logdir/$svc
+	mkdir $logdir/$svc
 fi
 ###############################################################
 # 30 Days over file Delete
@@ -57,17 +57,18 @@ if [ "$svc" == "$ch_svc" ];then
 	if [ $response_check -eq "0" ];then
 		echo "Already In Use(Check-one)" > $log_PFile
 		curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0009","resultMsg":"Already In Use(Check-one)","serviceCode":"'"$svc"'"}'
-        echo "[-------------------------------]" >> $log_PFile
-        echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
+		echo "[-------------------------------]" >> $log_PFile
+		echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
 
-	    exit 0
+		exit 0
+	
 	elif [ $response_check -eq "1" ];then
-        result='{"resultCode":"E0009","resultMsg":"Already In Use(Check-one)"}'
-        echo $result
-        echo $result >> $log_PFile
+		result='{"resultCode":"E0009","resultMsg":"Already In Use(Check-one)"}'
+		echo $result
+		echo $result >> $log_PFile
 		echo "Already In Use(Check-one)" > $log_PFile
-        echo "[-------------------------------]" >> $log_PFile
-        echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
+		echo "[-------------------------------]" >> $log_PFile
+		echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
 
 		exit 0
 	fi
@@ -84,7 +85,7 @@ if [ ! -z `awk '{print $2}' $origin_path/tmp/chkoneprogtemp_$svc` ];then
 		if [ $svc == $uui ];then
 			kill -9 `awk '{print $2}' $line`
 			echo "$svc process kill " >> $log_PFile
-	        exit 0
+			exit 0
 		fi
 	done < $origin_path/tmp/chkoneprogtemp_$svc 
 fi
@@ -112,8 +113,8 @@ if [ -f $testfile_dir ];then
 		if [ $response_check -eq "0" ];then
 			echo "Inputfile is not wav or pcm" >> $log_PFile
 			curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0002","resultMsg":"Check File type","serviceCode":"'"$svc"'"}'
-            echo "[-------------------------------]" >> $log_PFile
-            echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
+			echo "[-------------------------------]" >> $log_PFile
+			echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
 
 			exit 0
 		elif [ $response_check -eq "1" ];then
@@ -121,8 +122,8 @@ if [ -f $testfile_dir ];then
 			echo $result
 			echo $result >> $log_PFile
 			echo "Inputfile is not wav or pcm" >> $log_PFile
-            echo "[-------------------------------]" >> $log_PFile
-            echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
+			echo "[-------------------------------]" >> $log_PFile
+			echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
 			exit 0
 		fi
 	fi
@@ -131,8 +132,8 @@ else
 	if [ $response_check -eq "0" ];then
 		echo "$testfile_dir is not file" >> $log_TFile
 		curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0003","resultMsg":"Input is directory","serviceCode":"'"$svc"'"}'
-        echo "[-------------------------------]" >> $log_PFile
-        echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
+		echo "[-------------------------------]" >> $log_PFile
+		echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
 		process_kill
 		exit 0
 	elif [ $response_check -eq "1" ];then
@@ -140,8 +141,8 @@ else
 		echo $result >> $log_PFile
 		echo $result
 		echo "$testfile_dir is not file" >> $log_TFile
-        echo "[-------------------------------]" >> $log_PFile
-        echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
+		echo "[-------------------------------]" >> $log_PFile
+		echo "END :$(date +'%F-%H-%M-%S-%N')" >> $log_PFile
 		process_kill
 		exit 0
 	fi
@@ -215,25 +216,22 @@ if [ $response_check -eq "0" ];then
 
 			break
 
-        elif [ "$nj" == "filetype" ];then
-            echo "Check File type" >> $log_PFile
-            curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0002","resultMsg":"Check File type","serviceCode":"'"$svc"'"}'
+		elif [ "$nj" == "filetype" ];then
+			echo "Check File type" >> $log_PFile
+			curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0002","resultMsg":"Check File type","serviceCode":"'"$svc"'"}'
 
-            ### 단건테스트에 사용된 음성 및 stt결과 삭제 ###ㅑ
-            rm -rf $origin_path/client-one/svc/$svc/*
+			### 단건테스트에 사용된 음성 및 stt결과 삭제 ###ㅑ
+			rm -rf $origin_path/client-one/svc/$svc/*
 
-            break
-
-
+			break
 
 		fi
 	done
-    rm $testfile_dir
+	rm $testfile_dir
+
 #### response type 1 ####
 else
-
 	$origin_path/check-one $svc $response_check $testfile_dir $date
-
 fi
 
 echo "[-------------------------------]" >> $log_PFile
