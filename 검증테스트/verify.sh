@@ -11,15 +11,9 @@ answer_dir=$4
 logdir=$origin_path/log
 date=`echo "$(date +'%F-%H-%M-%S-%N')"`
 
-if [ ! -d $logdir ];then
-   mkdir $logdir
-fi
-if [ ! -d $logdir/$svc ];then
-   mkdir $logdir/$svc
-fi
-if [ ! -d $origin_path/tmp ];then
-   mkdir $origin_path/tmp
-fi
+[[ ! -d $logdir ]] && mkdir $logdir
+[[ ! -d $logdir/$svc ]] && mkdir $logdir/$svc
+[[ ! -d $origin_path/tmp ]] && mkdir $origin_path/tmp
 
 log_PFile=$origin_path/log/$svc/log_verify_${svc}_${date}
 log_TFile=$origin_path/log/$svc/log_verify_already_${svc}_${date}

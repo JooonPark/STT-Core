@@ -14,31 +14,18 @@ wcr_path=/home/gosh2/WCR                   ## 필요시 변경
 test_path=$origin_path/test_file
 verify_dir=$origin_path/test_file/$svc/veri_dir
 
-if [ ! -d $test_path ];then
-   mkdir $test_path 
-fi
-
-if [ ! -d $test_path/$svc ];then
-   mkdir $test_path/$svc
-fi
-
-if [ ! -d $test_path/$svc/veri_dir ];then
-   mkdir $test_path/$svc/veri_dir
-fi
+[[ ! -d $test_path ]] && mkdir $test_path 
+[[ ! -d $test_path/$svc ]] && mkdir $test_path/$svc
+[[ ! -d $test_path/$svc/veri_dir ]] && mkdir $test_path/$svc/veri_dir
 
 rm -rf $verify_dir/* $verify_dir.partial $verify_dir.partialindex $verify_dir.result $verify_dir.score $verify_dir.stt_timestamp $verify_dir.sttresult
 #####################################################
 
-if [ $svc == "2" ];then
-	sfp_port="37160"   # 필요시 변경
-
-elif [ $svc == "4" ];then
-	sfp_port="39100"   # 필요시 변경
-
-else
-	sfp_port="37160"   # 필요시 변경
-fi
-
+case $svc in
+    2) sfp_port=37160 ;;
+    4) sfp_port=39100 ;;
+    *) sfp_port=37160 ;;
+esac
 
 ################### wav_conv ###################
 wav_conv()
@@ -83,16 +70,43 @@ check_sttsim()
 }
 
 ################### check sfp ###################
-check_sfp()
+
+check_sfplog()
 {
-    ps -ef | grep sfp.timestamp.wc |grep -v grep |grep -v tail |grep -v vi > $origin_path/tmp/verify_sfp_$svc
-    if [ -z `awk '{print $2}' $origin_path/tmp/verify_sfp_$svc` ];then
-            echo "SFP is dead" >> $origin_path/log/$svc/log_verify_${svc}_${date}
-            curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0110","resultMsg":"SFP is dead","serviceCode":"'"$svc"'"}'
-            exit 0
-    else
-        echo "SFP is alive" >> $origin_path/log/$svc/log_verify_${svc}_${date}
-    fi
+    export LANG=en
+    week_before=`date +%a`
+    week_after=`echo $week_before |tr [A-Z] [a-z]`
+
+    while [ 1 ]
+    do
+        if [ $svc -eq "4" ];then
+            s1=`tail -1 $log_path/sfp/sfp.clone.log.${week_after}`
+
+            sleep 10
+
+            s2=`tail -1 $log_path/sfp/sfp.clone.log.${week_after}`
+            if [[ $s1 = $s2 ]];then
+                break
+            else
+                continue
+            fi
+
+        else
+            s1=`tail -1 $log_path/sfp/sfp.log.${week_after}`
+
+            sleep 5
+
+            s2=`tail -1 $log_path/sfp/sfp.log.${week_after}`
+
+            if [ "$s1" = "$s2" ];then
+                break
+            else
+                continue
+            fi
+        fi
+    done
+
+    echo "done"
 }
 
 ################### sttresult_conv ###################
@@ -141,66 +155,65 @@ echo "sttsim done"
 sleep 2
 
 check_sttsim
+check_sfplog
 
-while [ 1 ]
-do
-	input_file_count=`ls $verify_dir | wc -l`
-	output_file_dir=$verify_dir.sttresult
-	output_file_count=`ls $output_file_dir |wc -l`
+input_file_count=`ls $verify_dir | wc -l`
+output_file_dir=$verify_dir.sttresult
+output_file_count=`ls $output_file_dir |wc -l`
 
-	if [ "$input_file_count" -eq "$output_file_count" ];then
-		### sttresult_conv ###
-		sttresult_conv $svc
+if [ "$input_file_count" -eq "$output_file_count" ];then
+	### sttresult_conv ###
+	sttresult_conv $svc
 
-		grep -rn F $output_file_dir > $origin_path/tmp/check_m_f_$svc
-		checkmf=`cat $origin_path/tmp/check_m_f_$svc`
+	grep -rn F $output_file_dir > $origin_path/tmp/check_m_f_$svc
+	checkmf=`cat $origin_path/tmp/check_m_f_$svc`
 
-		if [ -z "$checkmf" ];then
-			nohup $wcr_path/backup-compute-wcr ark:$answer_dir $output_file_dir > $origin_path/tmp/cer_$svc &
+	if [ -z "$checkmf" ];then
+		nohup $wcr_path/backup-compute-wcr ark:$answer_dir $output_file_dir > $origin_path/tmp/cer_$svc &
 		
+		while [ 1 ]
+		do
+			wcr_check=`ps -ef |grep backup-compute-wcr |grep -v grep`
+			if [ -z "$wcr_check" ];then
+				echo "wcr done" > $origin_path/tmp/wcrdone
+				break
+			else
+				continue
+			fi
+		done
+	
+		nj1=`tail -1 $origin_path/tmp/cer_$svc`
+
+		if [[ "$nj1" =~ Over ]];then
+			cer_check="cer_pass"
+			nj=`tail -1 $origin_path/tmp/cer_$svc |awk '{print $2}' |cut -d '(' -f1`
+		else
+			cer_check="cer_fail"
+		fi
+
+		if [ "$cer_check" == "cer_fail" ];then
+			echo "Answer File Error"
+
+		elif [ "$cer_check" == "cer_pass" ];then
+			nohup $wcr_path/backup-compute-wcr --word-error-rate=true ark:$answer_dir $output_file_dir > $origin_path/tmp/wer_$svc &
+
 			while [ 1 ]
 			do
-				wcr_check=`ps -ef |grep backup-compute-wcr |grep -v grep`
-				if [ -z "$wcr_check" ];then
-					echo "wcr done" > $origin_path/tmp/wcrdone
+				na3=`tail -1 $origin_path/tmp/wer_$svc`
+				if [[ "$na3" =~ Over ]];then
+					na=`tail -1 $origin_path/tmp/wer_$svc |awk '{print $2}' |cut -d '(' -f1`
+					echo "score : $nj $na"
 					break
-				else
-					continue
 				fi
 			done
-	
-			nj1=`tail -1 $origin_path/tmp/cer_$svc`
-
-			if [[ "$nj1" =~ Over ]];then
-				cer_check="cer_pass"
-				nj=`tail -1 $origin_path/tmp/cer_$svc |awk '{print $2}' |cut -d '(' -f1`
-			else
-				cer_check="cer_fail"
-			fi
-
-			if [ "$cer_check" == "cer_fail" ];then
-				echo "Answer File Error"
-
-			elif [ "$cer_check" == "cer_pass" ];then
-				nohup $wcr_path/backup-compute-wcr --word-error-rate=true ark:$answer_dir $output_file_dir > $origin_path/tmp/wer_$svc &
-
-				while [ 1 ]
-				do
-					na3=`tail -1 $origin_path/tmp/wer_$svc`
-					if [[ "$na3" =~ Over ]];then
-						na=`tail -1 $origin_path/tmp/wer_$svc |awk '{print $2}' |cut -d '(' -f1`
-						echo "score : $nj $na"
-						break
-					fi
-				done
-			fi
-
-		else
-			echo "contain F sttresult error"
 		fi
-		break
+
+	else
+		echo "contain F sttresult error"
 	fi
-done
+else
+	echo "contain F sttresult error"
+fi
 
 ### 모든것이 끝나고 검증에 사용된 산출물 모두 삭제 ###
 rm -rf $verify_dir/* $verify_dir.partial $verify_dir.partialindex $verify_dir.result $verify_dir.score $verify_dir.stt_timestamp $verify_dir.sttresult
