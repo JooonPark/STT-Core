@@ -22,13 +22,8 @@ esac
 test_path=$origin_path/client-one/svc
 verify_dir=$origin_path/client-one/svc/$svc/
 
-if [ ! -d $test_path ];then
-   mkdir $test_path
-fi
-
-if [ ! -d $verify_dir ];then
-   mkdir $verify_dir
-fi
+[[ ! -d $test_path ]] && mkdir $test_path
+[[ ! -d $verify_dir ]] && mkdir $verify_dir
 
 ################### wav_conv ###################
 wav_conv()
