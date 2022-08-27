@@ -8,20 +8,20 @@ testfile_dir=$3
 date=$4
 
 origin_path=/home/gosh2/smp/c-agent/test ### 필요에 따라 바꿔야함
-vbrgw_port=37170   						 ### 필요에 따라 바꿔야함 
+
+case $svc in
+    2) vbrgw_port=37170 ;;
+    3) vbrgw_port=37171 ;;
+    *) vbrgw_port=37170 ;;
+esac
 
 ################### direc & check & delete result folders ###################
 
 test_path=$origin_path/client-one/svc
 verify_dir=$origin_path/client-one/svc/$svc/
 
-if [ ! -d $test_path ];then
-   mkdir $test_path
-fi
-
-if [ ! -d $verify_dir ];then
-   mkdir $verify_dir
-fi
+[[ ! -d $test_path ]] && mkdir $test_path
+[[ ! -d $verify_dir ]] && mkdir $verify_dir
 
 ################### wav_conv ###################
 wav_conv()

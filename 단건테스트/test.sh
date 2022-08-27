@@ -30,17 +30,10 @@ fi
 resultfile=$origin_path/client-one/svc/$svc/$testfile_result
 logdir=$origin_path/log
 
-if [ ! -d $origin_path/tmp ];then
-	mkdir $origin_path/tmp
-fi
+[[ ! -d $origin_path/tmp ]] &&mkdir $origin_path/tmp
+[[ ! -d $logdir ]] && mkdir $logdir
+[[ ! -d $logdir/$svc ]] && mkdir $logdir/$svc
 
-if [ ! -d $logdir ];then
-	mkdir $logdir
-fi
-
-if [ ! -d $logdir/$svc ];then
-	mkdir $logdir/$svc
-fi
 ###############################################################
 # 30 Days over file Delete
 
