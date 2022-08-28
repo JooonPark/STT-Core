@@ -9,6 +9,7 @@ date=$4
 origin_path=/home/gosh2/smp/c-agent/verify ## 필요시 변경
 bin_dir=/opt/gosh2/bin                     ## 필요시 변경
 wcr_path=/home/gosh2/WCR                   ## 필요시 변경
+log_path=/log/gosh2
 
 ################### direc & check ###################
 test_path=$origin_path/test_file
@@ -82,10 +83,10 @@ check_sfplog()
         if [ $svc -eq "4" ];then
             s1=`tail -1 $log_path/sfp/sfp.clone.log.${week_after}`
 
-            sleep 10
+            sleep 5
 
             s2=`tail -1 $log_path/sfp/sfp.clone.log.${week_after}`
-            if [[ $s1 = $s2 ]];then
+            if [ "$s1" = "$s2" ];then
                 break
             else
                 continue
@@ -105,8 +106,6 @@ check_sfplog()
             fi
         fi
     done
-
-    echo "done"
 }
 
 ################### sttresult_conv ###################
