@@ -16,17 +16,9 @@ log_path=/log/gosh2
 test_path=$origin_path/test_file
 verify_dir=$origin_path/test_file/$svc/veri_dir
 
-if [ ! -d $test_path ];then
-   mkdir $test_path 
-fi
-
-if [ ! -d $test_path/$svc ];then
-   mkdir $test_path/$svc
-fi
-
-if [ ! -d $test_path/$svc/veri_dir ];then
-   mkdir $test_path/$svc/veri_dir
-fi
+[[ ! -d $test_path ]] && mkdir $test_path 
+[[ ! -d $test_path/$svc ]] && mkdir $test_path/$svc
+[[ ! -d $test_path/$svc/veri_dir ]] && mkdir $test_path/$svc/veri_dir
 
 rm -rf $verify_dir/* $verify_dir.partial $verify_dir.partialindex $verify_dir.result $verify_dir.score $verify_dir.stt_timestamp $verify_dir.sttresult
 #####################################################
