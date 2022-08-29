@@ -58,7 +58,7 @@ wav_conv()
 		done
 
 		rm $indir/*.wav
-		find $indir -name "*pcm" -exec rename .wav.pcm .wav {} \;
+		find $indir -name "*.pcm" -exec rename .wav.pcm .wav {} \;
 
 	elif [ "$svc" -eq "4" ];then
 
@@ -81,9 +81,6 @@ wav_conv()
 
 }
 
-#################################################
-
-
 ################### check sttsim ###################
 check_sttsim()
 {
@@ -95,7 +92,6 @@ check_sttsim()
                 ps -ef | grep dirsim | grep -v grep | grep -v vi | grep -v tail > $origin_path/tmp/check_sttsim_$svc
                 if [ ! -z `awk '{print $2}' $origin_path/tmp/check_sttsim_$svc` ];then
                         kill -9 `awk '{print $2}' $origin_path/tmp/check_sttsim_$svc`
-#                        echo "kill sttsim process"
                         exit 0
                 fi
         fi
@@ -110,7 +106,7 @@ check_sfplog()
 
     while [ 1 ]
     do
-        if [ $svc -eq "3" ];then
+        if [ $svc -eq "4" ];then
             s1=`tail -1 $log_path/sfp/sfp.clone.log.${week_after}`
 
             sleep 10
@@ -242,7 +238,7 @@ if [ "$input_file_count" -eq "$output_file_count" ];then
 	fi
 
 else
-	echo "contain F sttresult error"
+	echo "SFP ERROR"
 fi
 
 ### 모든것이 끝나고 검증에 사용된 산출물 모두 삭제 ###
