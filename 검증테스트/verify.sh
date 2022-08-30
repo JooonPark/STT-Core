@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ################### input parameter ###################
-origin_path=/home/gosh2/smp/c-agent/verify  ### 필요시 변경
+origin_path=/home/aicapp/smp/c-agent/verify  ### 필요시 변경
 
 callbackurl=$1
 svc=$2
@@ -131,8 +131,8 @@ do
 		break
 	
 	elif [ "$nj" == "SFP ERROR" ];then
-		curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0060","resultMsg":"STT Result Error","serviceCode":"'"$svc"'"}'
-		echo "{"resultCode":"E0060","resultMsg":"STT Result Error","serviceCode":""$svc""} done" >> $log_PFile
+		curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0070","resultMsg":"SFP Error","serviceCode":"'"$svc"'"}'
+		echo "{"resultCode":"E0070","resultMsg":"SFP Error","serviceCode":""$svc""} done" >> $log_PFile
 		break
 
 	elif [[ "$nj" =~ "score" ]];then

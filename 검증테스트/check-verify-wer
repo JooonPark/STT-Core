@@ -7,10 +7,10 @@ answer_dir=$3
 date=$4
 
 ### 필요시 변경 ###
-origin_path=/home/gosh2/smp/c-agent/verify
-bin_dir=/opt/gosh2/bin
-wcr_path=/home/gosh2/WCR
-log_path=/log/gosh2
+origin_path=/home/aicapp/smp/c-agent/verify
+bin_dir=/stt/opt/aicapp/bin
+wcr_path=/home/aicapp/WCR
+log_path=/log/aicapp
 
 ################### direc & check ###################
 test_path=$origin_path/test_file
@@ -76,7 +76,7 @@ wav_conv()
 ################### check sttsim ###################
 check_sttsim()
 {
-        check_connect=`head -19 /home/gosh2/smp/c-agent/verify/log/$svc/log_dirsim_${svc}_${date} |tail -1`
+        check_connect=`head -19 $origin_path/log/$svc/log_dirsim_${svc}_${date} |tail -1`
         if [[ `echo $check_connect |tr -d ' '` == *ConnectedToFrp* ]];then
                 echo "sttim pass" >> $origin_path/log/$svc/log_verify_${svc}_${date}
         else
@@ -113,7 +113,7 @@ check_sfplog()
         else
             s1=`tail -1 $log_path/sfp/sfp.log.${week_after}`
 
-            sleep 5
+            sleep 10
 
             s2=`tail -1 $log_path/sfp/sfp.log.${week_after}`
 
@@ -219,6 +219,7 @@ if [ "$input_file_count" -eq "$output_file_count" ];then
 				na3=`tail -1 $origin_path/tmp/wer_$svc`
 				if [[ "$na3" =~ Over ]];then
 					na=`tail -1 $origin_path/tmp/wer_$svc |awk '{print $2}' |cut -d '(' -f1`
+#					na=`tail -1 $origin_path/tmp/wer_$svc |awk '{print $2}' |cut -d '(' -f2 |sed 's/)//g'`
 					echo "score : $nj $na"
 					break
 				fi
