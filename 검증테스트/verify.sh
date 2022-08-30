@@ -48,8 +48,8 @@ ps -ef | grep check-verify | grep -v grep |grep -v tail |grep -v vi > $origin_pa
 
 ch_svc=`awk '{print $10}' $origin_path/tmp/checkverify-check_$svc`
 if [ "$svc" == "$ch_svc" ];then
-	echo "Alread In Use" > $log_TFile
 	curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0090","resultMsg":"Already In Use(Verifying)","serviceCode":"'"$svc"'"}'
+	echo "Alread In Use" > $log_TFile
 	exit 0
 fi
 
@@ -66,8 +66,8 @@ echo "[-------------------------------]" >> $log_PFile
 
 ################### check input-parameter ###################
 if [ ! -d $testfile_dir ] || [ ! -e $answer_dir ];then
-	echo "Check Parameter" >> $log_PFile
 	curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0010","resultMsg":"Check parameter","serviceCode":"'"$svc"'"}'
+	echo "Check Parameter" >> $log_PFile
 	process_kill
 	exit 0
 fi
@@ -82,14 +82,14 @@ do
 			echo $tst1 "is ok" >> $log_PFile
 			continue
 		else
-			echo $tst1 "is not wav or pcm" >> $log_PFile
 			curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0020","resultMsg":"Inputfile is not wav or pcm","serviceCode":"'"$svc"'"}'
+			echo $tst1 "is not wav or pcm" >> $log_PFile
 			process_kill
 			exit 0
 		fi
 	else
-		echo "$tst1 is directory" >> $log_PFile
 		curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0030","resultMsg":"Input is directory","serviceCode":"'"$svc"'"}'
+		echo "$tst1 is directory" >> $log_PFile
 		process_kill
 		exit 0
 	fi
@@ -106,38 +106,37 @@ $origin_path/check-verify-wer $svc $testfile_dir $answer_dir $date >> $log_PFile
 while [ 1 ]
 do
 	nj=`tail -1 $logdir/$svc/log_verify_${svc}_${date} |head -1`
-	if [ "$nj" == "dirsim Error" ];then
-		echo "dirsim Error" >> $log_PFile
-		curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0050","resultMsg":"dirsim Error","serviceCode":"'"$svc"'"}'
+	if [ "$nj" == "filetype" ];then
+		curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0020","resultMsg":"Check File type","serviceCode":"'"$svc"'"}'
+		echo "{"resultCode":"E0020","resultMsg":"Check File type","serviceCode":""$svc""} done" >> $log_PFile
+		break
+	elif [ "$nj" == "Answer File Error" ];then
+		curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0040","resultMsg":"Answer File Error","serviceCode":"'"$svc"'"}'
+		echo "{"resultCode":"E0040","resultMsg":"Answer File Error","serviceCode":""$svc""} done" >> $log_PFile
+		break
+	
+	elif [ "$nj" == "dirsim Error" ];then
+		curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0050","resultMsg":"dirsim Error","serviceCode":"'"$svc"'"}'
 		echo "{"resultCode":"E0050","resultMsg":"dirsim Error","serviceCode":""$svc""} done" >> $log_PFile
 		break
 
-	elif [ "$nj" == "Answer File Error" ];then
-		echo "Answer File Error!!" >> $log_PFile
-		curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0040","resultMsg":"Answer File Error","serviceCode":"'"$svc"'"}'
-		echo "{"resultCode":"E0040","resultMsg":"Answer File Error","serviceCode":""$svc""} done" >> $log_PFile
-		break
-
 	elif [ "$nj" == "contain F sttresult error" ];then
-		echo "contain F sttresult error" >> $log_PFile
-		curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0060","resultMsg":"STT Result Error","serviceCode":"'"$svc"'"}'
+		curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0060","resultMsg":"STT Result Error","serviceCode":"'"$svc"'"}'
 		echo "{"resultCode":"E0060","resultMsg":"STT Result Error","serviceCode":""$svc""} done" >> $log_PFile
 		break
 
+	elif [ "$nj" == "SFP Error" ];then
+		curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0070","resultMsg":"SFP Error","serviceCode":"'"$svc"'"}'
+		echo "{"resultCode":"E0070","resultMsg":"SFP Error","serviceCode":""$svc""} done" >> $log_PFile
+		break
+	
 	elif [[ "$nj" =~ "score" ]];then
-		echo "$nj" > $origin_path/tmp/recogRate_$svc
 		cer1=`awk '{print $3}' $origin_path/tmp/recogRate_$svc`
 		wer1=`awk '{print $4}' $origin_path/tmp/recogRate_$svc`
 		echo "CER : $cer1 , WER : $wer1"  >> $log_PFile
 		curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"C0010","resultMsg":"success","serviceCode":"'"$svc"'","cerRate":"'"$cer1"'","werRate":"'"$wer1"'"}'
 		echo "{"resultCode":"C0010","resultMsg":"success","serviceCode":""$svc"","cerRate":""$cer1"","werRate":""$wer1""} done" >> $log_PFile
-		
 		break	
-	elif [ "$nj" == "filetype" ];then
-		echo "Check File type" >> $log_PFile
-		curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0020","resultMsg":"Check File type","serviceCode":"'"$svc"'"}'
-
-		break
 	fi
 done
 

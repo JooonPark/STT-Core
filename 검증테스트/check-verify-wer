@@ -24,6 +24,7 @@ rm -rf $verify_dir/* $verify_dir.partial $verify_dir.partialindex $verify_dir.re
 
 case $svc in
     2) sfp_port=37160 ;;
+    3) sfp_port=37160 ;;
     4) sfp_port=39100 ;;
     *) sfp_port=37160 ;;
 esac
@@ -83,7 +84,7 @@ check_sfplog()
         if [ $svc -eq "4" ];then
             s1=`tail -1 $log_path/sfp/sfp.clone.log.${week_after}`
 
-            sleep 5
+            sleep 10
 
             s2=`tail -1 $log_path/sfp/sfp.clone.log.${week_after}`
             if [ "$s1" = "$s2" ];then
@@ -95,7 +96,7 @@ check_sfplog()
         else
             s1=`tail -1 $log_path/sfp/sfp.log.${week_after}`
 
-            sleep 5
+            sleep 10
 
             s2=`tail -1 $log_path/sfp/sfp.log.${week_after}`
 
@@ -201,6 +202,7 @@ if [ "$input_file_count" -eq "$output_file_count" ];then
 				na3=`tail -1 $origin_path/tmp/wer_$svc`
 				if [[ "$na3" =~ Over ]];then
 					na=`tail -1 $origin_path/tmp/wer_$svc |awk '{print $2}' |cut -d '(' -f1`
+#					na=`tail -1 $origin_path/tmp/wer_$svc |awk '{print $2}' |cut -d '(' -f2 | sed 's/)//g'`
 					echo "score : $nj $na"
 					break
 				fi
@@ -211,7 +213,7 @@ if [ "$input_file_count" -eq "$output_file_count" ];then
 		echo "contain F sttresult error"
 	fi
 else
-	echo "contain F sttresult error"
+	echo "SFP Error"
 fi
 
 ### 모든것이 끝나고 검증에 사용된 산출물 모두 삭제 ###
