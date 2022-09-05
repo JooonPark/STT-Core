@@ -48,7 +48,7 @@ ps -ef | grep check-verify | grep -v grep |grep -v tail |grep -v vi > $origin_pa
 
 ch_svc=`awk '{print $10}' $origin_path/tmp/checkverify-check_$svc`
 if [ "$svc" == "$ch_svc" ];then
-	curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0090","resultMsg":"Already In Use(Verifying)","serviceCode":"'"$svc"'"}'
+	curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0090","resultMsg":"Already In Use(Verifying)","serviceCode":"'"$svc"'"}'
 	echo "Alread In Use" > $log_TFile
 	exit 0
 fi
@@ -66,7 +66,7 @@ echo "[-------------------------------]" >> $log_PFile
 
 ################### check input-parameter ###################
 if [ ! -d $testfile_dir ] || [ ! -e $answer_dir ];then
-	curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0010","resultMsg":"Check parameter","serviceCode":"'"$svc"'"}'
+	curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0010","resultMsg":"Check parameter","serviceCode":"'"$svc"'"}'
 	echo "Check Parameter" >> $log_PFile
 	process_kill
 	exit 0
@@ -82,13 +82,13 @@ do
 			echo $tst1 "is ok" >> $log_PFile
 			continue
 		else
-			curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0020","resultMsg":"Inputfile is not wav or pcm","serviceCode":"'"$svc"'"}'
+			curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0020","resultMsg":"Inputfile is not wav or pcm","serviceCode":"'"$svc"'"}'
 			echo $tst1 "is not wav or pcm" >> $log_PFile
 			process_kill
 			exit 0
 		fi
 	else
-		curl $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0030","resultMsg":"Input is directory","serviceCode":"'"$svc"'"}'
+		curl -k $callbackurl -H "Content-Type: application/json" -d '{"resultCode":"E0030","resultMsg":"Input is directory","serviceCode":"'"$svc"'"}'
 		echo "$tst1 is directory" >> $log_PFile
 		process_kill
 		exit 0
